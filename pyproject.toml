@@ -1,0 +1,38 @@
+[project]
+name = "zprp-modeltranslation"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ruff>=0.14.1",
+]
+
+
+[tool.ruff]
+line-length = 99
+
+
+[tool.ruff.lint]
+select = ["ALL"]
+
+ignore = [
+    # Conflicting rules with the formatter
+    "W191",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "COM812",
+    "COM819",
+
+    # Annoying rules
+    "D1",   # Required docstrings
+    "T20",  # No print()
+
+]
