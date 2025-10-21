@@ -14,9 +14,9 @@ We are basing the functionality on the [django-modeltranslation](https://django-
 
 ## Planned experiments
 
-1. Creating a simple mock application to test usability and user friendliness on the prototype for assessing correctness of our idea and approach.  
-2. Creating a simple use case with FastApi/SQLModel and Django model translation, to directly compare features, usability and performance against our implementation  
-3. Testing a complete external FastAPI and SQLModel application to identify potential issues when integrating the library into an existing project.
+- Creating a simple mock application to test usability and user friendliness on the prototype for assessing correctness of our idea and approach.  
+- Creating a simple use case with FastApi/SQLModel and Django model translation, to directly compare features, usability and performance against our implementation  
+- Testing a complete external FastAPI and SQLModel application to identify potential issues when integrating the library into an existing project.
 
 ## Tech stack
 
@@ -36,12 +36,12 @@ We are basing the functionality on the [django-modeltranslation](https://django-
 | 1 | 20/10/25 | Configuring dependencies and tools. Setting up simple use cases and experimenting with possible solutions. |
 | 2 | 27/10/25 | Creating a prototype. |
 | 3 | 3/11/25 | Finishing and polishing the prototype. |
-| 4..5 | 10/11/25 | None (2 weeks full of university tests) |
+| 4..5 | 10/11/25 | None (2 weeks full of university tests). |
 | 6 | 24/11/25 | Experimenting and planning future work. |
 | 7..9 | 01/12/25 | Implementing features for real world use cases. |
 | 10 | 22/12/25 | Testing on existing projects and fixing compatibility issues. |
 | 11 | 29/12/25 | Finalizing public API and finishing documentation. |
-| 12 | 05/01/26 | Publishing the package |
+| 12 | 05/01/26 | Publishing the package. |
 | 13..14 | 12/01/26 | Schedule reserve / hotfixing issues. |
 
 ### Major deadlines
