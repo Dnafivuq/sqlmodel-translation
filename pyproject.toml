@@ -17,7 +17,7 @@ line-length = 99
 select = ["ALL"]
 
 ignore = [
-    # Conflicting rules with the formatter
+    # Rules conflicting with the formatter
     "W191",
     "E111",
     "E114",
