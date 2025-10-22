@@ -13,11 +13,9 @@ def add(x: int, y: int) -> int:
     Raises:
         ValueError: This is here to supress a warning.
 
-    Example:
-    ```python
-    >>> add(1, 2)
-    3
-    ```
+    Examples:
+        >>> add(1, 2)
+        3
 
     """
     return x + y
