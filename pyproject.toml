@@ -36,6 +36,10 @@ ignore = [
     "COM812",
     "COM819",
 
+    # Conflicting rules
+    "D203",
+    "D213",
+
     # Annoying rules
     "D1",   # Required docstrings
     "T20",  # No print()
