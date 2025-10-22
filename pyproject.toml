@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "mkdocs>=1.6.1",
+    "mkdocstrings[python]>=0.30.1",
+    "mkdocs-material>=9.6.22",
     "ruff>=0.14.1",
 ]
 
@@ -30,6 +36,10 @@ ignore = [
     "Q003",
     "COM812",
     "COM819",
+
+    # Conflicting rules
+    "D203",
+    "D213",
 
     # Annoying rules
     "D1",   # Required docstrings
