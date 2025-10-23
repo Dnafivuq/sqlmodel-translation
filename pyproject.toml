@@ -18,7 +18,27 @@ dev = [
     "mkdocs-material>=9.6.22",
     "ruff>=0.14.1",
     "pytest>=8.4.2",
+    "tox>=4.31.0",
+    "tox-uv>=1.29.0",
 ]
+
+[tool.tox]
+requires = ["tox>=4"]
+env_list = ["3.12", "3.13"]
+
+[tool.tox.env_run_base]
+description = "run unit tests"
+deps = [
+    "pytest>=8"
+]
+
+commands = [["pytest", "tests", { replace = "posargs", extend = true}]]
+
+[tool.tox.env-3.12]
+description = "run unit tests in python-3.12"
+
+[tool.tox.env-3.13]
+description = "run unit tests in python-3.13"
 
 
 [tool.ruff]
@@ -50,5 +70,6 @@ ignore = [
     # Annoying rules
     "D1",   # Required docstrings
     "T20",  # No print()
+    "S101"      # No assert
 
 ]
