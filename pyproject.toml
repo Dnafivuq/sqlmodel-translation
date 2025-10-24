@@ -33,7 +33,7 @@ deps = [
 ]
 
 commands = [["pytest", "-q", "tests", { replace = "posargs", extend = true}],
-    ["pytest", "q", "--doctest-modules", "src"]]
+    ["pytest", "-q", "--doctest-modules", "src"]]
 
 [tool.tox.env-3.12]
 description = "run unit tests and doctests in python-3.12"
