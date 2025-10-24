@@ -27,18 +27,19 @@ requires = ["tox>=4"]
 env_list = ["3.12", "3.13"]
 
 [tool.tox.env_run_base]
-description = "run unit tests"
+description = "run tests"
 deps = [
     "pytest>=8"
 ]
 
-commands = [["pytest", "tests", { replace = "posargs", extend = true}]]
+commands = [["pytest", "-q", "tests", { replace = "posargs", extend = true}],
+    ["pytest", "q", "--doctest-modules", "src"]]
 
 [tool.tox.env-3.12]
-description = "run unit tests in python-3.12"
+description = "run unit tests and doctests in python-3.12"
 
 [tool.tox.env-3.13]
-description = "run unit tests in python-3.13"
+description = "run unit tests and doctests in python-3.13"
 
 
 [tool.ruff]
@@ -70,6 +71,6 @@ ignore = [
     # Annoying rules
     "D1",   # Required docstrings
     "T20",  # No print()
-    "S101"      # No assert
+    "S101"  # No assert
 
 ]
