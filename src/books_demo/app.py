@@ -1,13 +1,22 @@
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
-import models, schemas
-from database import engine, get_db
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from sqlmodel import Session, select
 
-models.Base.metadata.create_all(bind=engine)
+from .database import engine, create_db_and_tables
+from .models import Book
 
-app = FastAPI(title="books_demo")
 
-@app.get("/books", response_model=list[schemas.Book])
-def get_books(db: Session = Depends(get_db)):
-    books = db.query(models.Book).all()
-    return books
+app = FastAPI()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
+
+@app.get("/books/")
+def get_books():
+    with Session(engine) as session:
+        books = session.exec(select(Book)).all()
+        return books
