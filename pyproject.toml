@@ -20,6 +20,7 @@ dev = [
     "pytest>=8.4.2",
     "tox>=4.31.0",
     "tox-uv>=1.29.0",
+    "fastapi[standard]>=0.119.1",
 ]
 
 [tool.tox]
