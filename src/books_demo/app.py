@@ -2,17 +2,18 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlmodel import Session, select
 
-from .database import engine, create_db_and_tables
+from .database import engine, create_db_and_tables, seed_data
 from .models import Book
-
-
-app = FastAPI()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    seed_data()
     yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.get("/books/")
