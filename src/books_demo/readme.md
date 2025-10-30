@@ -5,12 +5,12 @@
 If using vscode use this launch.json config to debug this test package.
 
 {
-    "name": "Debug FastAPI (like fastapi dev)",
+    "name": "Debug FastAPI Dev",
     "type": "debugpy",
     "request": "launch",
-    "module": "src.books_demo.app",
-    "console": "integratedTerminal",
-    "justMyCode": false,
+    "module": "fastapi",
+    "args": ["dev", "src/books_demo/app.py"],
+    "justMyCode": false
 }
 
 This helps properly resolve package imports when debugging.
