@@ -6,6 +6,7 @@ from sqlmodel import Session, SQLModel, select, update
 
 from books_demo import database as db
 from books_demo import models as md
+from books_demo.seed_data import seed_data
 
 
 class TranslationOptions:
@@ -49,7 +50,7 @@ if __name__ == "__main__":
     t.register(md.Book, BookTranslationOptions)
 
     db.create_db_and_tables(engine)
-    db.seed_data(engine)
+    seed_data(engine)
 
     with Session(engine) as session:
         statement = (

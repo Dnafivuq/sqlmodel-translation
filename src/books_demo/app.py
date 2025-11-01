@@ -3,8 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlmodel import Session, select
 
-from .database import create_db_and_tables, create_db_engine, seed_data
+from .database import create_db_and_tables, create_db_engine
 from .models import Book
+from .seed_data import seed_data
 
 engine = create_db_engine()
 

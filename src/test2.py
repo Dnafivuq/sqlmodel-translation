@@ -54,7 +54,7 @@ t = Translator()
 
 
 @t.register(BookTranslationOptions)
-class Book2(SQLModel, table=True):
+class Book(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     title: str
     author: str
@@ -63,23 +63,23 @@ class Book2(SQLModel, table=True):
 if __name__ == "__main__":
     engine = db.create_db_engine()
 
-    db.create_db_and_tables()
+    db.create_db_and_tables(engine)
 
     with Session(engine) as session:
-        if not session.exec(select(Book2)).first():
+        if not session.exec(select(Book)).first():
             books = [
-                Book2(title="The Hobbit", author="J.R.R. Tolkien"),
-                Book2(title="1984", author="George Orwell"),
-                Book2(title="To Kill a Mockingbird", author="Harper Lee"),
+                Book(title="The Hobbit", author="J.R.R. Tolkien"),
+                Book(title="1984", author="George Orwell"),
+                Book(title="To Kill a Mockingbird", author="Harper Lee"),
             ]
             session.add_all(books)
             session.commit()
     with Session(engine) as session:
         statement = (
-            update(Book2).where(Book2.author == "J.R.R. Tolkien").values(title_pl="translation")
+            update(Book).where(Book.author == "J.R.R. Tolkien").values(title_pl="translation")
         )
         session.exec(statement)
-        stm = select(Book2)
+        stm = select(Book)
         books = session.exec(stm).all()
 
         print(books)
