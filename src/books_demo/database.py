@@ -4,8 +4,8 @@ from sqlmodel import Session, SQLModel, create_engine, select
 from .models import Book
 
 
-def create_db_engine() -> Engine:
-    sqlite_file_name = "database.db"
+def create_db_engine(in_memory=True) -> Engine:
+    sqlite_file_name = ":memory:" if in_memory else "database.db"
     sqlite_url = f"sqlite:///{sqlite_file_name}"
 
     connect_args = {"check_same_thread": False}
