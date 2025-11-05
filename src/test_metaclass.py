@@ -20,7 +20,7 @@ class TranslatorMetaclass(SQLModelMetaclass):
         languages = kwargs["translation_options"].languages
 
         for field in fields:
-            if field in annotations:
+            if (field in annotations) and (annotations[field] is str):
                 for language in languages:
                     annotations[f"{field}_{language}"] = str | None
                     namespace[f"{field}_{language}"] = Field(default=None)
