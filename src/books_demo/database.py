@@ -1,9 +1,15 @@
+import tempfile
+
 from sqlalchemy.engine import Engine
 from sqlmodel import SQLModel, create_engine
 
 
 def create_db_engine(in_memory=True) -> Engine:
-    sqlite_file_name = ":memory:" if in_memory else "database.db"
+    if in_memory:
+        sqlite_file_name = ":memory:"
+    else:
+        sqlite_file_name = tempfile.NamedTemporaryFile(delete=False, suffix=".db").name
+
     sqlite_url = f"sqlite:///{sqlite_file_name}"
 
     connect_args = {"check_same_thread": False}
