@@ -1,21 +1,16 @@
 from fastapi import FastAPI, Request
-from contextvars import ContextVar
+
+from .translator import Translator
 
 
-current_locale: ContextVar[str] = ContextVar("current_locale", default="en")
-
-
-def register_app(app: FastAPI):
-    """Register middleware for accessing request locale"""
+def apply_translation(app: FastAPI) -> None:
+    """Register middleware for accessing request locale."""
 
     @app.middleware("http")
     async def set_locale_context(request: Request, call_next):
         header = request.headers.get("accept-language")
-        if header:
-            locale = header.split(",")[0].strip()
-        else:
-            locale = None
+        locale = header.split(",")[0].strip() if header else None
 
-        current_locale.set(locale)
-        response = await call_next(request)
-        return response
+        Translator.set_locale(locale)
+        return await call_next(request)
+
