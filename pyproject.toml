@@ -44,7 +44,7 @@ description = "run unit tests and doctests in python-3.13"
 
 
 [tool.ruff]
-line-length = 99
+line-length = 109
 
 
 [tool.ruff.lint]
