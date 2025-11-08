@@ -1,4 +1,4 @@
 from books_demo.app import app
-from modeltranslation.locale_manager import register_app
+from modeltranslation.locale_manager import apply_translation
 
-register_app(app)
+apply_translation(app)

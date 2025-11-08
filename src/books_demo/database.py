@@ -4,7 +4,7 @@ from sqlalchemy.engine import Engine
 from sqlmodel import SQLModel, create_engine
 
 
-def create_db_engine(in_memory=True) -> Engine:
+def create_db_engine(in_memory=False) -> Engine:
     if in_memory:
         sqlite_file_name = ":memory:"
     else:
