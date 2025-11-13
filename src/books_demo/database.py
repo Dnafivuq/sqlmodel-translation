@@ -4,11 +4,11 @@ from sqlalchemy.engine import Engine
 from sqlmodel import SQLModel, create_engine
 
 
-def create_db_engine(in_memory=False) -> Engine:
+def create_db_engine(in_memory: bool = False) -> Engine:  # noqa: FBT001, FBT002
     if in_memory:
         sqlite_file_name = ":memory:"
     else:
-        sqlite_file_name = tempfile.NamedTemporaryFile(delete=False, suffix=".db").name
+        sqlite_file_name = tempfile.NamedTemporaryFile(delete=False, suffix=".db").name  # noqa: SIM115
 
     sqlite_url = f"sqlite:///{sqlite_file_name}"
 
