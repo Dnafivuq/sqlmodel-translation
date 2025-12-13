@@ -1,11 +1,15 @@
 .venv
 __pycache__
+dist
 
 # vscode
 .vscode
 
 # pytest
 .pytest_cache
+
+# ruff
+.ruff_cache
 
 # MkDocs
 site
