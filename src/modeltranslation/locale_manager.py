@@ -13,4 +13,3 @@ def apply_translation(app: FastAPI) -> None:
 
         Translator.set_locale(locale)
         return await call_next(request)
-

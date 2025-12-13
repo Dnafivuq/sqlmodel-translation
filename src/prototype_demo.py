@@ -1,36 +1,29 @@
 from sqlmodel import Field, Session, SQLModel, select, update
 
 from books_demo import database as db
-from modeltranslation.translator import TranslationOptions, Translator, TranslatorMetaclass, register
+from modeltranslation.translator import TranslationOptions, Translator
 
-Translator.set_locale("en")
+translator = Translator("en")
 engine = db.create_db_engine()
 
 
-class BookTranslationOptions(TranslationOptions):
-    fields = ("title",)
-    languages = ("pl", "en")
-
-
-# @register(translation_options=BookTranslationOptions)
-class Book(
-    SQLModel,
-    table=True,
-    metaclass=TranslatorMetaclass,
-    translation_options=BookTranslationOptions,
-):
+class Book(SQLModel, table=True):
     id: int = Field(primary_key=True)
     title: str | None
     author: str
 
 
-register(Book, BookTranslationOptions)
+@translator.register(Book)
+class BookTranslationOptions(TranslationOptions):
+    fields = ("title",)
+    languages = ("pl", "en")
 
 
 db.create_db_and_tables(engine)
 
 
 with Session(engine) as session:
+    translator.set_locale("pl")
     if not session.exec(select(Book)).first():
         books = [
             Book(title="The Hobbit", author="J.R.R. Tolkien"),
@@ -42,11 +35,11 @@ with Session(engine) as session:
 
 with Session(engine) as session:
     print("\n\n Test start")
+    translator.set_locale("pl")
     statement = update(Book).where(Book.author == "J.R.R. Tolkien").values(title="translation")
     session.exec(statement)
 
     print("\n")
-    Translator.set_locale("pl")
     stm = select(Book).where(Book.title == "translation")
     books = session.exec(stm).all()
     print("\n")

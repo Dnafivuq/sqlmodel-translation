@@ -1,24 +1,10 @@
 from contextvars import ContextVar
+from copy import deepcopy
 
-from sqlmodel import Field, SQLModel
+from sqlalchemy import Column
+from sqlalchemy.orm import column_property
+from sqlmodel import SQLModel
 from sqlmodel.main import SQLModelMetaclass
-
-
-class Translator:
-    _current_locale: ContextVar[str] = ContextVar("current_locale", default="en")
-    _default_locale: str = "pl"
-
-    @classmethod
-    def get_locale(cls) -> str:
-        return cls._current_locale.get()
-
-    @classmethod
-    def set_locale(cls, locale: str) -> None:
-        cls._current_locale.set(locale)
-
-    @classmethod
-    def get_default_locale(cls) -> str:
-        return cls._default_locale
 
 
 class TranslationOptions:
@@ -26,75 +12,92 @@ class TranslationOptions:
     languages: tuple[str] = ()
 
 
-"""
-@register(News)
-class NewsTranslationOptions(TranslationOptions):
-    fields = ('title', 'text',)
+class Translator:
+    def __init__(self, default_locale: str) -> None:
+        self._current_locale: ContextVar[str] = ContextVar("current_locale", default="en")
+        self._default_locale: str = default_locale
 
-class NewsTranslationOptions(TranslationOptions):
-    fields = ('title', 'text',)
-    required_languages = {'de': ('title', 'text'), 'default': ('title',)}
+    def get_locale(self) -> str:
+        return self._current_locale.get()
 
-https://django-modeltranslation.readthedocs.io/en/latest/installation.html#languages
-"""
+    def set_locale(self, locale: str) -> None:
+        self._current_locale.set(locale)
 
+    def get_default_locale(self) -> str:
+        return self._default_locale
 
-def register(cls: type[SQLModel], translation_options: TranslationOptions) -> type[SQLModel]:
-    original_getattribute = cls.__getattribute__
-    original_setattr = cls.__setattr__
+    def register(self, model: type[SQLModel]):
+        def decorator(options: type[TranslationOptions]) -> None:
+            self._replace_accessors(model, options)
+            self._rebuild_model(model, options)
 
-    def new_getattribute(self: SQLModel, name: str) -> any:
-        if name.startswith("_") or name not in translation_options.fields:
-            return original_getattribute(self, name)
+        return decorator
 
-        current_locale = Translator.get_locale()
-        default_locale = Translator.get_default_locale()
+    def _replace_accessors(
+        self, model: type[SQLModel], translation_options: TranslationOptions
+    ) -> type[SQLModel]:
+        original_getattribute = model.__getattribute__
+        original_setattr = model.__setattr__
 
-        # TODO: implement returning the default value in case if translation field value is empty  # noqa: E501, FIX002
-        if current_locale in translation_options.languages:
-            return original_getattribute(self, f"{name}_{current_locale}")
+        def new_getattribute(model_self: SQLModel, name: str) -> any:
+            if name.startswith("_") or name not in translation_options.fields:
+                return original_getattribute(model_self, name)
 
-        return original_getattribute(self, f"{name}_{default_locale}")
+            current_locale = self.get_locale()
+            default_locale = self.get_default_locale()
 
-    def new_setattr(self: SQLModel, name: str, value: any) -> None:
-        if name.startswith("_") or name not in translation_options.fields:
-            return original_setattr(self, name, value)
+            # TODO: implement returning the default value in case if translation field value is empty  # noqa: E501, FIX002
+            if current_locale in translation_options.languages:
+                return original_getattribute(model_self, f"{name}_{current_locale}")
 
-        current_locale = Translator.get_locale()
-        default_locale = Translator.get_default_locale()
+            return original_getattribute(model_self, f"{name}_{default_locale}")
 
-        if current_locale in translation_options.languages:
-            return original_setattr(self, f"{name}_{current_locale}", value)
+        def new_setattr(model_self: SQLModel, name: str, value: any) -> None:
+            if name.startswith("_") or name not in translation_options.fields:
+                return original_setattr(model_self, name, value)
 
-        return original_setattr(self, name, f"{name}_{default_locale}")
+            current_locale = self.get_locale()
+            default_locale = self.get_default_locale()
 
-    class LocalizedMeta(SQLModelMetaclass):
-        def __getattribute__(self, name: str) -> any:
-            current_locale = Translator.get_locale()
+            if current_locale in translation_options.languages:
+                return original_setattr(model_self, f"{name}_{current_locale}", value)
 
-            if name in translation_options.fields:
-                localized = f"{name}_{current_locale}"
-                if hasattr(cls, localized):
-                    return getattr(cls, localized)
-            return super().__getattribute__(name)
+            return original_setattr(model_self, name, f"{name}_{default_locale}")
 
-    cls.__class__ = LocalizedMeta
-    cls.__getattribute__ = new_getattribute
-    cls.__setattr__ = new_setattr
-    return cls
+        class LocalizedMeta(SQLModelMetaclass):
+            def __getattribute__(model_self, name: str) -> any:
+                current_locale = self.get_locale()
 
+                if name in translation_options.fields:
+                    localized = f"{name}_{current_locale}"
+                    if hasattr(model, localized):
+                        return getattr(model, localized)
+                return super().__getattribute__(name)
 
-class TranslatorMetaclass(SQLModelMetaclass):
-    def __new__(cls, name: str, bases: tuple, namespace: dict, **kwargs: dict[str]) -> "TranslatorMetaclass":
-        annotations = namespace.setdefault("__annotations__", {})
+        model.__class__ = LocalizedMeta
+        model.__getattribute__ = new_getattribute
+        model.__setattr__ = new_setattr
+        return model
 
-        fields = kwargs["translation_options"].fields
-        languages = kwargs["translation_options"].languages
+    def _rebuild_model(self, model: type[SQLModel], translation_options: TranslationOptions) -> None:
+        for field in translation_options.fields:
+            for lang in translation_options.languages:
+                field_name = f"{field}_{lang}"
 
-        for field in fields:
-            if field in annotations and (annotations[field] == (str | None) or annotations[field] is str):
-                for language in languages:
-                    annotations[f"{field}_{language}"] = str | None
-                    namespace[f"{field}_{language}"] = Field(default=None)
+                # TODO: check if field type is translatable
+                orig_type = model.__table__.columns[field].type
 
-        return super().__new__(cls, name, bases, namespace, **kwargs)
+                column = Column(field_name, orig_type, nullable=True)
+                model.__table__.append_column(column)
+
+                pydantic_field = deepcopy(model.model_fields[field])
+                pydantic_field.alias = field_name
+                model.model_fields[field_name] = pydantic_field
+
+                orig_annotation = model.__annotations__[field]
+
+                model.__annotations__[field_name] = orig_annotation
+
+                setattr(model, field_name, column_property(column))
+
+        model.model_rebuild(force=True)
