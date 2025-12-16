@@ -22,6 +22,9 @@ dev = [
     "fastapi[standard]>=0.119.1",
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["./tests/*"]
+
 [tool.tox]
 requires = ["tox>=4"]
 env_list = ["3.12", "3.13"]
