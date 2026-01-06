@@ -1,5 +1,7 @@
 from contextvars import ContextVar
 from copy import deepcopy
+from functools import wraps
+from typing import Callable
 
 from sqlalchemy import Column
 from sqlalchemy.orm import column_property
@@ -26,7 +28,7 @@ class Translator:
     def get_default_locale(self) -> str:
         return self._default_locale
 
-    def register(self, model: type[SQLModel]):
+    def register(self, model: type[SQLModel]) -> Callable:
         def decorator(options: type[TranslationOptions]) -> None:
             self._replace_accessors(model, options)
             self._rebuild_model(model, options)
@@ -36,47 +38,27 @@ class Translator:
     def _replace_accessors(
         self, model: type[SQLModel], translation_options: TranslationOptions
     ) -> type[SQLModel]:
-        original_getattribute = model.__getattribute__
-        original_setattr = model.__setattr__
 
-        def new_getattribute(model_self: SQLModel, name: str) -> any:
-            if name.startswith("_") or name not in translation_options.fields:
-                return original_getattribute(model_self, name)
+        def locale_decorator(original_function: Callable) -> Callable:
+            @wraps(original_function)
+            def locale_function(model_self: SQLModel, name: str, *args: any) -> any:
+                # ignore private functions
+                if name.startswith("_") or name not in translation_options.fields:
+                    return original_function(model_self, name, *args)
 
-            current_locale = self.get_locale()
-            default_locale = self.get_default_locale()
-
-            # TODO: implement returning the default value in case if translation field value is empty  # noqa: E501, FIX002
-            if current_locale in translation_options.languages:
-                return original_getattribute(model_self, f"{name}_{current_locale}")
-
-            return original_getattribute(model_self, f"{name}_{default_locale}")
-
-        def new_setattr(model_self: SQLModel, name: str, value: any) -> None:
-            if name.startswith("_") or name not in translation_options.fields:
-                return original_setattr(model_self, name, value)
-
-            current_locale = self.get_locale()
-            default_locale = self.get_default_locale()
-
-            if current_locale in translation_options.languages:
-                return original_setattr(model_self, f"{name}_{current_locale}", value)
-
-            return original_setattr(model_self, name, f"{name}_{default_locale}")
-
-        class LocalizedMeta(SQLModelMetaclass):
-            def __getattribute__(model_self, name: str) -> any:
                 current_locale = self.get_locale()
+                default_locale = self.get_default_locale()
 
-                if name in translation_options.fields:
-                    localized = f"{name}_{current_locale}"
-                    if hasattr(model, localized):
-                        return getattr(model, localized)
-                return super().__getattribute__(name)
+                if current_locale in translation_options.languages:
+                    return original_function(model_self, f"{name}_{current_locale}", *args)
 
-        model.__class__ = LocalizedMeta
-        model.__getattribute__ = new_getattribute
-        model.__setattr__ = new_setattr
+                return original_function(model_self, f"{name}_{default_locale}", *args)
+
+            return locale_function
+
+        model.__class__.__getattribute__ = locale_decorator(model.__class__.__getattribute__)
+        model.__getattribute__ = locale_decorator(model.__getattribute__)
+        model.__setattr__ = locale_decorator(model.__setattr__)
         return model
 
     def _rebuild_model(self, model: type[SQLModel], translation_options: TranslationOptions) -> None:
