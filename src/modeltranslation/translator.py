@@ -11,7 +11,10 @@ from sqlmodel.main import SQLModelMetaclass
 
 class TranslationOptions:
     fields: tuple[str] = ()
-    languages: tuple[str] = ()
+    fallback_languages: dict[str, tuple[str]] = None
+    fallback_values: dict[str, any] | any = None
+    fallback_undefined: dict[str, any] = None
+    required_languages: dict[str, tuple[str]] | tuple[str] = None
 
 
 class Translator:
