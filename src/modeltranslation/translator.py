@@ -2,7 +2,7 @@ from collections.abc import Callable, Iterator
 from contextvars import ContextVar
 from copy import deepcopy
 from functools import wraps
-from typing import Any
+from typing import Any, Union, get_args, get_origin
 
 from sqlalchemy import Column
 from sqlalchemy.orm import column_property
@@ -103,35 +103,59 @@ class Translator:
 
     def _rebuild_model(self, model: type[SQLModel], options: TranslationOptions) -> None:
         for field in options.fields:
+            orig_type = model.__table__.columns[field].type
+            orig_annotation = model.__annotations__[field]
+
+            # change field to be Nullable
+            model.__table__.columns[field].nullable = True
+            model.__annotations__[field] = self._make_optional(orig_annotation)
+            model.model_fields[field].annotation = model.__annotations__[field]
+
             for lang in self._languages:
-                field_name = f"{field}_{lang}"
+                translation_field = f"{field}_{lang}"
 
-                orig_type = model.__table__.columns[field].type
+                translation_annotation = (
+                    orig_annotation if self._is_required(lang, field, options) else self._make_optional(orig_annotation)
+                )
 
-                column = Column(field_name, orig_type, nullable=(not self._is_required(lang, field, options)))  # noqa: E501
+                # change model SQL Alchemy table
+                column = Column(
+                    translation_field,
+                    orig_type,
+                    nullable=(not self._is_required(lang, field, options))
+                )
+
                 model.__table__.append_column(column)
 
+                # change model Pydatnic field
                 pydantic_field = deepcopy(model.model_fields[field])
-                pydantic_field.alias = field_name
-                model.model_fields[field_name] = pydantic_field
 
-                orig_annotation = model.__annotations__[field]
+                pydantic_field.alias = translation_field
+                pydantic_field.annotation = translation_annotation
 
-                model.__annotations__[field_name] = orig_annotation
+                model.model_fields[translation_field] = pydantic_field
+                model.__annotations__[translation_field] = translation_annotation
 
-                setattr(model, field_name, column_property(column))
+                setattr(model, translation_field, column_property(column))
 
         model.model_rebuild(force=True)
+
+    def _make_optional(self, typehint: type) -> type:
+        """Wrap a type in Optional[] unless it's already optional."""
+        origin = get_origin(typehint)
+        if origin is Union and type(None) in get_args(typehint):
+            return typehint
+        return typehint | None
 
     def _is_required(self, language: str, field: str, options: TranslationOptions) -> bool:
         if options.required_languages is None:
             return False
         if type(options.required_languages) is tuple:
-            return language in options
+            return language in options.required_languages
         if language in options.required_languages:
-            return field in options[language]
+            return field in options.required_languages[language]
         if "default" in options.required_languages:
-            return field in options["default"]
+            return field in options.required_languages["default"]
         return False
 
     def _is_null_value(self, field: str, value: any, options: TranslationOptions) -> bool:
