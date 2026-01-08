@@ -2,6 +2,7 @@ from collections.abc import Callable, Iterator
 from contextvars import ContextVar
 from copy import deepcopy
 from functools import wraps
+from typing import Any
 
 from sqlalchemy import Column
 from sqlalchemy.orm import column_property
@@ -11,8 +12,8 @@ from sqlmodel import SQLModel
 class TranslationOptions:
     fields: tuple[str] = ()
     fallback_languages: dict[str, tuple[str]] = None
-    fallback_values: dict[str, any] | any = None
-    fallback_undefined: dict[str, any] = None
+    fallback_values: dict[str, Any] | Any = None
+    fallback_undefined: dict[str, Any] = None
     required_languages: dict[str, tuple[str]] | tuple[str] = None
 
 
@@ -38,10 +39,10 @@ class Translator:
             self._fallback_languages = fallback_languages
 
     def get_active_language(self) -> str:
-        return self._current_language.get()
+        return self._active_language.get()
 
     def set_active_language(self, locale: str) -> None:
-        self._current_locale.set(locale)
+        self._active_language.set(locale)
 
     def get_default_language(self) -> str:
         return self._default_language
@@ -54,29 +55,29 @@ class Translator:
         return decorator
 
     def _replace_accessors(
-        self, model: type[SQLModel], translation_options: TranslationOptions
+        self, model: type[SQLModel], options: TranslationOptions
     ) -> type[SQLModel]:
         def locale_get_decorator(original_get_function: Callable) -> Callable:
             @wraps(original_get_function)
             def locale_function(model_self: SQLModel, name: str, *args: any) -> any:
                 # ignore private and not translated functions
-                if name.startswith("_") or name not in translation_options.fields:
+                if name.startswith("_") or name not in options.fields:
                     return original_get_function(model_self, name, *args)
 
-                current_locale = self.get_locale()
+                active_language = self.get_active_language()
 
-                if current_locale in self._languages:
-                    value = original_get_function(model_self, f"{name}_{current_locale}")
-                    if not self._is_null_value(name, value, translation_options):
+                if active_language in self._languages:
+                    value = original_get_function(model_self, f"{name}_{active_language}")
+                    if not self._is_null_value(name, value, options):
                         return value
 
-                for fallback_language in self._fallbacks_generator(current_locale, translation_options):
+                for fallback_language in self._fallbacks_generator(active_language, options):
                     value = original_get_function(model_self, f"{name}_{fallback_language}")
-                    if not self._is_null_value(name, value, translation_options):
+                    if not self._is_null_value(name, value, options):
                         return value
 
                 # no fallback language yielded a value, try fallback values
-                return self._fallback_value(name, translation_options)
+                return self._fallback_value(name, options)
 
             return locale_function
 
@@ -84,13 +85,13 @@ class Translator:
             @wraps(original_set_function)
             def locale_function(model_self: SQLModel, name: str, value: any) -> None:
                 # ignore private and not translated functions
-                if name.startswith("_") or name not in translation_options.fields:
+                if name.startswith("_") or name not in options.fields:
                     return original_set_function(model_self, name, value)
 
-                current_locale = self.get_locale()
+                active_language = self.get_active_language()
                 # if language is in translation use it, else use the default translator language
-                if current_locale in self._languages:
-                    return original_set_function(model_self, f"{name}_{current_locale}", value)
+                if active_language in self._languages:
+                    return original_set_function(model_self, f"{name}_{active_language}", value)
                 return original_set_function(model_self, f"{name}_{self._default_language}", value)
 
             return locale_function
@@ -100,14 +101,14 @@ class Translator:
         model.__setattr__ = locale_set_decorator(model.__setattr__)
         return model
 
-    def _rebuild_model(self, model: type[SQLModel], translation_options: TranslationOptions) -> None:
-        for field in translation_options.fields:
-            for lang in translation_options.languages:
+    def _rebuild_model(self, model: type[SQLModel], options: TranslationOptions) -> None:
+        for field in options.fields:
+            for lang in self._languages:
                 field_name = f"{field}_{lang}"
 
                 orig_type = model.__table__.columns[field].type
 
-                column = Column(field_name, orig_type, nullable=True)
+                column = Column(field_name, orig_type, nullable=(not self._is_required(lang, field, options)))  # noqa: E501
                 model.__table__.append_column(column)
 
                 pydantic_field = deepcopy(model.model_fields[field])
@@ -122,8 +123,10 @@ class Translator:
 
         model.model_rebuild(force=True)
 
-    def _is_required_language(self, language: str, field: str, options: TranslationOptions) -> bool:
-        if type(options) is tuple:
+    def _is_required(self, language: str, field: str, options: TranslationOptions) -> bool:
+        if options.required_languages is None:
+            return False
+        if type(options.required_languages) is tuple:
             return language in options
         if language in options.required_languages:
             return field in options[language]
