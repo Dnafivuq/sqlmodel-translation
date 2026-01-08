@@ -54,7 +54,7 @@ class Translator:
 
         return decorator
 
-    def _replace_accessors(
+    def _replace_accessors(  # noqa: C901
         self, model: type[SQLModel], options: TranslationOptions
     ) -> type[SQLModel]:
         def locale_get_decorator(original_get_function: Callable) -> Callable:
@@ -115,7 +115,7 @@ class Translator:
                 translation_field = f"{field}_{lang}"
 
                 translation_annotation = (
-                    orig_annotation if self._is_required(lang, field, options) else self._make_optional(orig_annotation)
+                    orig_annotation if self._is_required(lang, field, options) else self._make_optional(orig_annotation)  # noqa: E501
                 )
 
                 # change model SQL Alchemy table
