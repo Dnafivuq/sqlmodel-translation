@@ -14,13 +14,15 @@ def test_books_translated_inserted(translator_pl_en_instance, book_seed_data) ->
     session = book_seed_data
     translator, book_instance = translator_pl_en_instance
 
+    translator.set_active_language("en")
+
     stm = select(book_instance).where(book_instance.author == "J.R.R. Tolkien")
     books = session.exec(stm).all()
-    # print(books)
 
     assert books[0].title == "The Hobbit"
 
-    translator.set_locale("pl")
+    translator.set_active_language("pl")
+
     statement = (
         update(book_instance).where(book_instance.author == "J.R.R. Tolkien").values(title="translation")
     )
@@ -28,7 +30,6 @@ def test_books_translated_inserted(translator_pl_en_instance, book_seed_data) ->
 
     stm = select(book_instance).where(book_instance.author == "J.R.R. Tolkien")
     books = session.exec(stm).all()
-    # print(books)
 
     assert books[0].title == "translation"
 
@@ -37,12 +38,15 @@ def test_books_translated_inserted2(translator_es_gb_instance, book_seed_data) -
     session = book_seed_data
     translator, book_instance = translator_es_gb_instance
 
+    translator.set_active_language("es")
+
     stm = select(book_instance).where(book_instance.author == "J.R.R. Tolkien")
     books = session.exec(stm).all()
-    # print(books)
+
     assert books[0].title == "The Hobbit"
 
-    translator.set_locale("gb")
+    translator.set_active_language("gb")
+
     statement = (
         update(book_instance).where(book_instance.author == "J.R.R. Tolkien").values(title="translation")
     )
@@ -50,5 +54,5 @@ def test_books_translated_inserted2(translator_es_gb_instance, book_seed_data) -
 
     stm = select(book_instance).where(book_instance.author == "J.R.R. Tolkien")
     books = session.exec(stm).all()
-    # print(books)
+
     assert books[0].title == "translation"

@@ -13,7 +13,11 @@ def clear_metadata() -> None:
 
 @pytest.fixture
 def engine_instance():
-    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     yield engine
     engine.dispose()
 
@@ -36,45 +40,54 @@ def create_db_and_tables(engine_instance: Engine):
 
 
 @pytest.fixture
-def translator_pl_en_instance(book_instance) -> None:
-    translator = Translator("en")
+def translator_pl_en_instance(book_instance):
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl"),
+    )
 
     @translator.register(book_instance)
     class BookTranslationOptions(TranslationOptions):
         fields = ("title",)
-        languages = ("pl", "en")
+        required_languages = ("en",)
 
     return translator, book_instance
 
 
 @pytest.fixture
-def translator_es_gb_instance(book_instance) -> None:
-    translator = Translator("es")
-    translator.set_locale("es")
+def translator_es_gb_instance(book_instance):
+    translator = Translator(
+        default_language="es",
+        languages=("es", "gb"),
+    )
+
+    translator.set_active_language("es")
 
     @translator.register(book_instance)
     class BookTranslationOptions(TranslationOptions):
         fields = ("title",)
-        languages = ("es", "gb")
 
     return translator, book_instance
 
 
 @pytest.fixture
-def session_instance(engine_instance: Engine, create_db_and_tables):
+def session_instance(
+    engine_instance: Engine,
+    create_db_and_tables,
+):
     with Session(engine_instance) as session:
         yield session
 
 
 @pytest.fixture
-def book_seed_data(session_instance, book_instance):
-    session = session_instance
-    if not session.exec(select(book_instance)).first():
+def book_seed_data(session_instance: Session, book_instance):
+    if not session_instance.exec(select(book_instance)).first():
         books = [
             book_instance(title="The Hobbit", author="J.R.R. Tolkien"),
             book_instance(title="1984", author="George Orwell"),
             book_instance(title="To Kill a Mockingbird", author="Harper Lee"),
         ]
-        session.add_all(books)
-        session.commit()
-    yield session_instance
+        session_instance.add_all(books)
+        session_instance.commit()
+
+    return session_instance
