@@ -37,6 +37,9 @@ class Translator:
         if fallback_languages:
             self._fallback_languages = fallback_languages
 
+    def get_languages(self) -> tuple[str]:
+        return self._languages
+
     def get_active_language(self) -> str:
         return self._active_language.get()
 
@@ -97,7 +100,28 @@ class Translator:
 
             return locale_function
 
-        model.__class__.__getattribute__ = locale_get_decorator(model.__class__.__getattribute__)
+        def locale_class_get_decorator(original_get_function: Callable) -> Callable:
+            @wraps(original_get_function)
+            def locale_function(
+                model_self: type[SQLModel] | SQLModel, name: str, *args: tuple[Any, ...]
+            ) -> Callable:
+                # ignore private and not translated functions
+                if name.startswith("_") or name not in options.fields:
+                    return original_get_function(model_self, name, *args)
+
+                active_language = self.get_active_language()
+
+                if active_language in self._languages:
+                    return original_get_function(model_self, f"{name}_{active_language}")
+
+                for fallback_language in self._fallbacks_generator(active_language, options):
+                    return original_get_function(model_self, f"{name}_{fallback_language}")
+
+                return original_get_function(model_self, f"{name}_{self._default_language}")
+
+            return locale_function
+
+        model.__class__.__getattribute__ = locale_class_get_decorator(model.__class__.__getattribute__)
         model.__getattribute__ = locale_get_decorator(model.__getattribute__)
         model.__setattr__ = locale_set_decorator(model.__setattr__)
         return model
