@@ -10,11 +10,83 @@ from sqlmodel import SQLModel
 
 
 class TranslationOptions:
+    """Base class for configuring the translation of SQLModel classes.
+
+    This class defines which fields are translated,
+    which translations are required and how to handle missing values.
+
+    Examples:
+        >>> class BookTranslationOptions(TranslationOptions):
+        ...     fields = ("title",)
+        ...     required_languages = ("en",)
+
+    """
+
     fields: tuple[str, ...] = ()
+    """Names of fields to translate.
+
+    Example:
+        `(`title`, `description`)`
+    """
+
     fallback_languages: dict[str, tuple[str, ...]] | None = None
+    """Languages to use when the current language is missing.
+
+    Example:
+        `('en', 'pl', 'de')`
+
+    The fallbacks can be also specified with a dictionary. The default key is required.
+
+    Example:
+        ```
+        {
+        'default': ('en', 'pl', 'de'),
+        'fr': 'es'
+        }
+        ```
+    """
     fallback_values: dict[str, Any] | Any = None
+    """The values to use if all fallback languages yielded no value.
+
+    Example:
+        `('No translation provided')`
+
+    It's also possible to specify a fallback value for each field
+
+    Example:
+        ```
+        {
+        'title': ('No translation'),
+        'author': ('No translation provided')
+        }
+        ```
+
+    """
+
     fallback_undefined: dict[str, Any] | None = None
+
     required_languages: dict[str, tuple[str, ...]] | tuple[str, ...] | None = None
+    """The required translations for this class
+
+    This also affects the pydantic model and typehints.
+
+    Example:
+        `('title',)`
+
+    The fallbacks can be also specified with a dictionary.
+    This makes it possible to set the requirements per field.
+
+    Example:
+        ```
+        {
+        'en': ('title', 'author'),
+        'default': ('title',)
+        }
+        ```
+
+    For english, title and author are required. For all other languages only title is required.
+
+    """
 
 
 class Translator:
@@ -50,6 +122,32 @@ class Translator:
         return self._default_language
 
     def register(self, model: type[SQLModel]) -> Callable:
+        """Register a SQLModel class for translations.
+
+        This function returns a decorator that applies `TranslationOptions`
+        to the given SQLModel class. After applying, the model
+        will have translation accessors and metadata set up automatically.
+
+        Args:
+            model (SQLModel): the class to apply translations on.
+
+        Examples:
+            >>> from sqlmodel import SQLModel
+            >>> from modeltranslation import Translator
+            ...
+            >>> class Book(SQLModel, table=True):
+            ...     title: str
+            ...
+            >>> translator = Translator(
+            ...     default_language="en",
+            ...     languages=("en", "pl"))
+            ...
+            >>> @translator.register(Book)
+            ... class BookTranslationOptions(TranslationOptions):
+            ...     fields=('title',)
+
+        """
+
         def decorator(options: TranslationOptions) -> None:
             self._replace_accessors(model, options)
             self._rebuild_model(model, options)
