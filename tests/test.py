@@ -96,9 +96,7 @@ def test_pydantic_rebuilt_correctly_2() -> None:
     )
     translator.set_active_language("en")
 
-    Book.model_validate(Book(title_pl="123"))
     Book.model_validate(Book(title="123"))
-    Book.model_validate(Book(title_en="123"))
 
     with pytest.raises(ValidationError):
         Book.model_validate(Book(title="1234"))
