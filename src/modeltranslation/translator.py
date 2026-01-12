@@ -10,19 +10,19 @@ from sqlmodel import SQLModel
 
 
 class TranslationOptions:
-    fields: tuple[str] = ()
-    fallback_languages: dict[str, tuple[str]] = None
+    fields: tuple[str, ...] = ()
+    fallback_languages: dict[str, tuple[str, ...]] | None = None
     fallback_values: dict[str, Any] | Any = None
-    fallback_undefined: dict[str, Any] = None
-    required_languages: dict[str, tuple[str]] | tuple[str] = None
+    fallback_undefined: dict[str, Any] | None = None
+    required_languages: dict[str, tuple[str, ...]] | tuple[str, ...] | None = None
 
 
 class Translator:
     def __init__(
         self,
         default_language: str,
-        languages: tuple[str],
-        fallback_languages: dict[str, tuple[str]] | None = None,
+        languages: tuple[str, ...],
+        fallback_languages: dict[str, tuple[str, ...]] | None = None,
     ) -> None:
         self._active_language: ContextVar[str] = ContextVar("current_locale", default=default_language)
 
@@ -30,10 +30,10 @@ class Translator:
         self._default_language: str = default_language
 
         # supported languages
-        self._languages: tuple[str] = languages
+        self._languages: tuple[str, ...] = languages
 
         # fallbacks for untranslated languages
-        self._fallback_languages: dict[str, tuple[str]] = {"default": (self._default_language,)}
+        self._fallback_languages: dict[str, tuple[str, ...]] = {"default": (self._default_language,)}
         if fallback_languages:
             self._fallback_languages = fallback_languages
 
@@ -50,7 +50,7 @@ class Translator:
         return self._default_language
 
     def register(self, model: type[SQLModel]) -> Callable:
-        def decorator(options: type[TranslationOptions]) -> None:
+        def decorator(options: TranslationOptions) -> None:
             self._replace_accessors(model, options)
             self._rebuild_model(model, options)
 
@@ -61,7 +61,9 @@ class Translator:
     ) -> type[SQLModel]:
         def locale_get_decorator(original_get_function: Callable) -> Callable:
             @wraps(original_get_function)
-            def locale_function(model_self: SQLModel, name: str, *args: any) -> any:
+            def locale_function(
+                model_self: type[SQLModel] | SQLModel, name: str, *args: tuple[Any, ...]
+            ) -> Callable:
                 # ignore private and not translated functions
                 if name.startswith("_") or name not in options.fields:
                     return original_get_function(model_self, name, *args)
@@ -85,7 +87,7 @@ class Translator:
 
         def locale_set_decorator(original_set_function: Callable) -> Callable:
             @wraps(original_set_function)
-            def locale_function(model_self: SQLModel, name: str, value: any) -> None:
+            def locale_function(model_self: type[SQLModel], name: str, value: Any) -> Callable:
                 # ignore private and not translated functions
                 if name.startswith("_") or name not in options.fields:
                     return original_set_function(model_self, name, value)
@@ -119,7 +121,7 @@ class Translator:
                 translation_annotation = (
                     orig_annotation
                     if self._is_required(lang, field, options)
-                    else self._make_optional(orig_annotation)  # noqa: E501
+                    else self._make_optional(orig_annotation)
                 )
 
                 # change model SQL Alchemy table
@@ -142,7 +144,7 @@ class Translator:
 
         model.model_rebuild(force=True)
 
-    def _make_optional(self, typehint: type) -> type:
+    def _make_optional(self, typehint: Any) -> Any:
         """Wrap a type in Optional[] unless it's already optional."""
         origin = get_origin(typehint)
         if origin is Union and type(None) in get_args(typehint):
@@ -160,7 +162,7 @@ class Translator:
             return field in options.required_languages["default"]
         return False
 
-    def _is_null_value(self, field: str, value: any, options: TranslationOptions) -> bool:
+    def _is_null_value(self, field: str, value: Any, options: TranslationOptions) -> bool:
         # if translation defines custom fallback undefined value then check if value is eq to it
         if options.fallback_undefined is not None and field in options.fallback_undefined:
             return value == options.fallback_undefined[field]
@@ -173,7 +175,7 @@ class Translator:
         elif self._fallback_languages is not None:
             yield from self._yield_fallbacks(language, self._fallback_languages)
 
-    def _yield_fallbacks(self, language: str, fallbacks: dict[str, tuple[str]] | None) -> Iterator[str]:
+    def _yield_fallbacks(self, language: str, fallbacks: dict[str, tuple[str, ...]] | None) -> Iterator[str]:
         if not fallbacks:
             return
 
@@ -188,7 +190,7 @@ class Translator:
             if fallback != language:
                 yield fallback
 
-    def _fallback_value(self, field: str, options: TranslationOptions) -> any:
+    def _fallback_value(self, field: str, options: TranslationOptions) -> Any:
         if options.fallback_values is None:
             return None
         if type(options.fallback_languages) is not dict:
