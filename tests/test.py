@@ -104,7 +104,6 @@ def test_pydantic_rebuilt_correctly_2() -> None:
     @translator.register(Book)
     class BookTranslationOptions(TranslationOptions):
         fields = ("title",)
-        required_languages = ("pl",)
 
     Book.model_validate(Book(title_pl="123"))
     Book.model_validate(Book(title_en="123"))
@@ -224,6 +223,29 @@ def test_translation_required_lang_annotations_optional() -> None:
     assert annotations["title"] == (str | None)
     assert annotations["title_pl"] == (str | None)
     assert annotations["title_en"] == (str | None)
+
+
+def test_translation_required_lang_object_creation() -> None:
+    class Book(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        title: str
+
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl"),
+    )
+
+    translator.set_active_language("en")
+
+    @translator.register(Book)
+    class BookTranslationOptions(TranslationOptions):
+        fields = ("title",)
+        required_languages = ("en",)
+
+    Book.model_validate(Book(title="123"))
+    Book.model_validate(Book(title_en="123"))
+    with pytest.raises(ValidationError):
+        Book.model_validate(Book(title_pl="123"))
 
 
 def test_translation_() -> None:
