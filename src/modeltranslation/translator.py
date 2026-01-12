@@ -4,6 +4,7 @@ from copy import deepcopy
 from functools import wraps
 from typing import Any, Union, get_args, get_origin
 
+from exceptions import ImproperlyConfiguredError
 from sqlalchemy import Column
 from sqlalchemy.orm import column_property
 from sqlmodel import SQLModel
@@ -37,8 +38,7 @@ class Translator:
         if fallback_languages:
             self._fallback_languages = fallback_languages
 
-    def get_languages(self) -> tuple[str]:
-        return self._languages
+        self._validate_translator_object()
 
     def get_active_language(self) -> str:
         return self._active_language.get()
@@ -59,6 +59,9 @@ class Translator:
     def _replace_accessors(  # noqa: C901
         self, model: type[SQLModel], options: TranslationOptions
     ) -> type[SQLModel]:
+        # check if TranslationOptions are valid before modifing model
+        self._validate_translation_options(options)
+
         def locale_get_decorator(original_get_function: Callable) -> Callable:
             @wraps(original_get_function)
             def locale_function(
@@ -87,7 +90,7 @@ class Translator:
 
         def locale_set_decorator(original_set_function: Callable) -> Callable:
             @wraps(original_set_function)
-            def locale_function(model_self: type[SQLModel], name: str, value: Any) -> Callable:
+            def locale_function(model_self: type[SQLModel], name: str, value: Any) -> Callable:  # noqa: ANN401
                 # ignore private and not translated functions
                 if name.startswith("_") or name not in options.fields:
                     return original_set_function(model_self, name, value)
@@ -100,39 +103,18 @@ class Translator:
 
             return locale_function
 
-        def locale_class_get_decorator(original_get_function: Callable) -> Callable:
-            @wraps(original_get_function)
-            def locale_function(
-                model_self: type[SQLModel] | SQLModel, name: str, *args: tuple[Any, ...]
-            ) -> Callable:
-                # ignore private and not translated functions
-                if name.startswith("_") or name not in options.fields:
-                    return original_get_function(model_self, name, *args)
-
-                active_language = self.get_active_language()
-
-                if active_language in self._languages:
-                    return original_get_function(model_self, f"{name}_{active_language}")
-
-                for fallback_language in self._fallbacks_generator(active_language, options):
-                    return original_get_function(model_self, f"{name}_{fallback_language}")
-
-                return original_get_function(model_self, f"{name}_{self._default_language}")
-
-            return locale_function
-
-        model.__class__.__getattribute__ = locale_class_get_decorator(model.__class__.__getattribute__)
+        model.__class__.__getattribute__ = locale_get_decorator(model.__class__.__getattribute__)
         model.__getattribute__ = locale_get_decorator(model.__getattribute__)
         model.__setattr__ = locale_set_decorator(model.__setattr__)
         return model
 
     def _rebuild_model(self, model: type[SQLModel], options: TranslationOptions) -> None:
         for field in options.fields:
-            orig_type = model.__table__.columns[field].type
+            orig_type = model.__table__.columns[field].type # pyright: ignore[reportAttributeAccessIssue]
             orig_annotation = model.__annotations__[field]
 
             # change field to be Nullable
-            model.__table__.columns[field].nullable = True
+            model.__table__.columns[field].nullable = True # pyright: ignore[reportAttributeAccessIssue]
             model.__annotations__[field] = self._make_optional(orig_annotation)
             model.model_fields[field].annotation = model.__annotations__[field]
 
@@ -150,7 +132,7 @@ class Translator:
                     translation_field, orig_type, nullable=(not self._is_required(lang, field, options))
                 )
 
-                model.__table__.append_column(column)
+                model.__table__.append_column(column) # pyright: ignore[reportAttributeAccessIssue]
 
                 # change model Pydatnic field
                 pydantic_field = deepcopy(model.model_fields[field])
@@ -165,7 +147,7 @@ class Translator:
 
         model.model_rebuild(force=True)
 
-    def _make_optional(self, typehint: Any) -> Any:
+    def _make_optional(self, typehint: Any) -> Any:  # noqa: ANN401
         """Wrap a type in Optional[] unless it's already optional."""
         origin = get_origin(typehint)
         if origin is Union and type(None) in get_args(typehint):
@@ -175,15 +157,18 @@ class Translator:
     def _is_required(self, language: str, field: str, options: TranslationOptions) -> bool:
         if options.required_languages is None:
             return False
+
         if type(options.required_languages) is tuple:
             return language in options.required_languages
-        if language in options.required_languages:
-            return field in options.required_languages[language]
-        if "default" in options.required_languages:
-            return field in options.required_languages["default"]
+
+        if type(options.required_languages) is dict:
+            if language in options.required_languages:
+                return field in options.required_languages[language]
+            if "default" in options.required_languages:
+                return field in options.required_languages["default"]
         return False
 
-    def _is_null_value(self, field: str, value: Any, options: TranslationOptions) -> bool:
+    def _is_null_value(self, field: str, value: Any, options: TranslationOptions) -> bool:  # noqa: ANN401
         # if translation defines custom fallback undefined value then check if value is eq to it
         if options.fallback_undefined is not None and field in options.fallback_undefined:
             return value == options.fallback_undefined[field]
@@ -211,7 +196,7 @@ class Translator:
             if fallback != language:
                 yield fallback
 
-    def _fallback_value(self, field: str, options: TranslationOptions) -> Any:
+    def _fallback_value(self, field: str, options: TranslationOptions) -> Any:  # noqa: ANN401
         if options.fallback_values is None:
             return None
         if type(options.fallback_languages) is not dict:
@@ -219,3 +204,69 @@ class Translator:
         if field in options.fallback_values:
             return options.fallback_values[field]
         return None
+
+    def _validate_translator_object(self) -> None:
+        if self._languages is None:
+            msg = "'languages' can not be None"
+            raise ImproperlyConfiguredError(msg)
+        if type(self._languages) is not tuple:
+            msg = f"'languages' type is invalid {type(self._languages)}"
+            raise ImproperlyConfiguredError(msg)
+
+        if self._default_language is None:
+            msg = "'default_language' can not be None"
+            raise ImproperlyConfiguredError(msg)
+
+        if self._default_language not in self._languages:
+            msg = f"'{self._default_language}' used in 'defult_language' not in defined languages {self._languages}"  # noqa: E501
+            raise ImproperlyConfiguredError(msg)
+
+        self._validate_fallback_languages(self._fallback_languages)
+
+
+    def _validate_translation_options(self, options: TranslationOptions) -> None:
+        self._validate_fallback_languages(options.fallback_languages)
+
+        if options.required_languages is None:
+            return
+
+        if type(options.required_languages) is tuple:
+            for lang in options.required_languages:
+                if lang not in self._languages:
+                    msg = f"'{lang}' used in 'required_languages' not in defined languages {self._languages}"
+                    raise ImproperlyConfiguredError(msg)
+        elif type(options.required_languages) is dict:
+            for lang in options.required_languages:
+                if lang != "default" and lang not in self._languages:
+                    msg = f"'{lang}' used in 'required_languages' not in defined languages {self._languages}"
+                    raise ImproperlyConfiguredError(msg)
+        else:
+            msg = f"'required_languages' type is invalid {type(options.required_languages)}"
+            raise ImproperlyConfiguredError(msg)
+
+
+    def _validate_fallback_languages(self, fallback_languages: dict[str, tuple[str, ...]] | None) -> None:
+        if fallback_languages is None:
+            return
+        if type(fallback_languages) is not dict:
+            msg = f"'fallback_languages' type is invalid {type(fallback_languages)}"
+            raise ImproperlyConfiguredError(msg)
+
+        if "default" not in fallback_languages:
+            msg = "missing 'default' key in 'fallback_languages'"
+            raise ImproperlyConfiguredError(msg)
+        for key, value in fallback_languages.items():
+            # check if languages used as keys are defined inside Translator languages
+            if key != "default" and key not in self._languages:
+                msg = f"'{key}' used in 'fallback_languages' not in defined languages {self._languages}"
+                raise ImproperlyConfiguredError(msg)
+            # check if fallbacks are defined as tuples
+            if type(value) is not tuple:
+                msg = f"'{key}' fallback type is invalid {type(value)}"
+                raise ImproperlyConfiguredError(msg)
+
+            # check if languages used as fallbacks are defined inside Translator languages
+            for lang in value:
+                if lang not in self._languages:
+                    msg = f"'{lang}' used in 'fallback_languages' not in defined languages {self._languages}"
+
