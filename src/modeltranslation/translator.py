@@ -19,12 +19,11 @@ class TranslationOptions:
 
 class Translator:
     def __init__(
-            self,
-            default_language: str,
-            languages: tuple[str],
-            fallback_languages: dict[str, tuple[str]] | None = None
-        ) -> None:
-
+        self,
+        default_language: str,
+        languages: tuple[str],
+        fallback_languages: dict[str, tuple[str]] | None = None,
+    ) -> None:
         self._active_language: ContextVar[str] = ContextVar("current_locale", default=default_language)
 
         # default language
@@ -37,6 +36,9 @@ class Translator:
         self._fallback_languages: dict[str, tuple[str]] = {"default": (self._default_language,)}
         if fallback_languages:
             self._fallback_languages = fallback_languages
+
+    def get_languages(self) -> tuple[str]:
+        return self._languages
 
     def get_active_language(self) -> str:
         return self._active_language.get()
@@ -115,14 +117,14 @@ class Translator:
                 translation_field = f"{field}_{lang}"
 
                 translation_annotation = (
-                    orig_annotation if self._is_required(lang, field, options) else self._make_optional(orig_annotation)  # noqa: E501
+                    orig_annotation
+                    if self._is_required(lang, field, options)
+                    else self._make_optional(orig_annotation)  # noqa: E501
                 )
 
                 # change model SQL Alchemy table
                 column = Column(
-                    translation_field,
-                    orig_type,
-                    nullable=(not self._is_required(lang, field, options))
+                    translation_field, orig_type, nullable=(not self._is_required(lang, field, options))
                 )
 
                 model.__table__.append_column(column)
