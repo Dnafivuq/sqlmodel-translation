@@ -30,8 +30,8 @@ def engine() -> Generator[Engine, Any, None]:
 @pytest.fixture
 def book_cls() -> type[SQLModel]:
     class Book(SQLModel, table=True):
-        id: int = Field(default=None, primary_key=True)
-        title: str | None
+        id: int | None = Field(default=None, primary_key=True)
+        title: str
         author: str
 
     return Book
@@ -45,7 +45,7 @@ def create_db_and_tables(engine: Engine) -> Generator[None, Any, None]:
 
 
 @pytest.fixture
-def translator_pl_en_instance(book_cls: type[SQLModel]) -> tuple[Translator, type[SQLModel]]:
+def translator_en_pl_instance(book_cls: type[SQLModel]) -> tuple[Translator, type[SQLModel]]:
     translator = Translator(
         default_language="en",
         languages=("en", "pl"),
