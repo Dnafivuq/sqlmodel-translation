@@ -4,10 +4,11 @@ from copy import deepcopy
 from functools import wraps
 from typing import Any, Union, get_args, get_origin
 
-from exceptions import ImproperlyConfiguredError
 from sqlalchemy import Column
 from sqlalchemy.orm import column_property
 from sqlmodel import SQLModel
+
+from src.modeltranslation.exceptions import ImproperlyConfiguredError
 
 
 class TranslationOptions:
@@ -110,11 +111,11 @@ class Translator:
 
     def _rebuild_model(self, model: type[SQLModel], options: TranslationOptions) -> None:
         for field in options.fields:
-            orig_type = model.__table__.columns[field].type # pyright: ignore[reportAttributeAccessIssue]
+            orig_type = model.__table__.columns[field].type  # pyright: ignore[reportAttributeAccessIssue]
             orig_annotation = model.__annotations__[field]
 
             # change field to be Nullable
-            model.__table__.columns[field].nullable = True # pyright: ignore[reportAttributeAccessIssue]
+            model.__table__.columns[field].nullable = True  # pyright: ignore[reportAttributeAccessIssue]
             model.__annotations__[field] = self._make_optional(orig_annotation)
             model.model_fields[field].annotation = model.__annotations__[field]
 
@@ -132,7 +133,7 @@ class Translator:
                     translation_field, orig_type, nullable=(not self._is_required(lang, field, options))
                 )
 
-                model.__table__.append_column(column) # pyright: ignore[reportAttributeAccessIssue]
+                model.__table__.append_column(column)  # pyright: ignore[reportAttributeAccessIssue]
 
                 # change model Pydatnic field
                 pydantic_field = deepcopy(model.model_fields[field])
@@ -223,7 +224,6 @@ class Translator:
 
         self._validate_fallback_languages(self._fallback_languages)
 
-
     def _validate_translation_options(self, options: TranslationOptions) -> None:
         self._validate_fallback_languages(options.fallback_languages)
 
@@ -243,7 +243,6 @@ class Translator:
         else:
             msg = f"'required_languages' type is invalid {type(options.required_languages)}"
             raise ImproperlyConfiguredError(msg)
-
 
     def _validate_fallback_languages(self, fallback_languages: dict[str, tuple[str, ...]] | None) -> None:
         if fallback_languages is None:
@@ -269,4 +268,4 @@ class Translator:
             for lang in value:
                 if lang not in self._languages:
                     msg = f"'{lang}' used in 'fallback_languages' not in defined languages {self._languages}"
-
+                    raise ImproperlyConfiguredError(msg)

@@ -18,6 +18,7 @@ class BookTranslationOptions(TranslationOptions):
     fields = ("title",)
     required_languages = ("pl",)
 
+
 db.create_db_and_tables(engine)
 
 
