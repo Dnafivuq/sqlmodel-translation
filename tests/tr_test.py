@@ -365,7 +365,7 @@ def test_none_fallback(engine: Engine) -> None:
         assert books[2].title == "fr TKaM"
 
 
-def test_different_fallback_in_transaltionoptions(engine) -> None:
+def test_different_fallback_in_transaltionoptions(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
         title: str | None
@@ -411,6 +411,15 @@ def test_different_fallback_in_transaltionoptions(engine) -> None:
         assert books[0].title == "en The Hobbit"
         assert books[1].title == "pl 1984"
         assert books[2].title == "en To Kill a Mockingbird"
+
+
+def test_fallback_on_the_same_language() -> None:
+    with pytest.raises(ImproperlyConfiguredError):
+        Translator(
+            default_language="en",
+            languages=("en", "pl", "fr"),
+            fallback_languages={"fr": ("fr",), "default": ("en",)},
+        )
 
 
 def test_invalid_fallback() -> None:
