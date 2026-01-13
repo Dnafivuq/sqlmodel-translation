@@ -1,2 +1,7 @@
 # Reference
-::: modeltranslation.add
+
+::: modeltranslation.Translator
+
+::: modeltranslation.TranslationOptions
+
+::: modeltranslation.apply_translation

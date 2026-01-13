@@ -17,3 +17,6 @@ site
 # tox
 .tox
 *.egg-info
+
+# mypy
+.mypy_cache

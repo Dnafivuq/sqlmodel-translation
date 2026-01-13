@@ -4,8 +4,8 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
+
 dependencies = [
-    "babel>=2.17.0",
     "fastapi>=0.119.1",
     "sqlalchemy>=2.0.44",
     "sqlmodel>=0.0.27",
@@ -20,10 +20,21 @@ dev = [
     "tox>=4.31.0",
     "tox-uv>=1.29.0",
     "fastapi[standard]>=0.119.1",
+    "mypy>=1.19.1",
 ]
+
+[build-system]
+requires = ["uv_build>=0.9.22,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "modeltranslation"
+
 
 [tool.pytest.ini_options]
 testpaths = ["./tests/*"]
+
+markers = ["todo(desc) : Suggestions for the library"]
 
 [tool.tox]
 requires = ["tox>=4"]
