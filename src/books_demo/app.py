@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from sqlmodel import Session, select
 
-from modeltranslation.locale_manager import apply_translation
+from modeltranslation.fastapi_middleware import apply_translation
 from modeltranslation.translator import TranslationOptions, Translator
 
 from .database import create_db_and_tables, create_db_engine
