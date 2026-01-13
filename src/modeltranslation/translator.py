@@ -3,13 +3,14 @@ from contextvars import ContextVar
 from copy import deepcopy
 from functools import wraps
 from types import UnionType
-from typing import Any, Union, get_args, get_origin
+from typing import Any, get_args, get_origin
 
+from pydantic import field_serializer
 from sqlalchemy import Column
 from sqlalchemy.orm import column_property
 from sqlmodel import SQLModel
 
-from src.modeltranslation.exceptions import ImproperlyConfiguredError
+from .exceptions import ImproperlyConfiguredError
 
 
 class TranslationOptions:
@@ -135,6 +136,12 @@ class Translator:
         return model
 
     def _rebuild_model(self, model: type[SQLModel], options: TranslationOptions) -> None:
+        def make_serializer(field_name: str) -> Callable:
+            @field_serializer(field_name, when_used="json")
+            def serial(self: type[SQLModel], _: Any) -> Any:  # noqa: ANN401
+                return getattr(self, field_name)
+            return serial
+
         for field in options.fields:
             orig_type = model.__table__.columns[field].type  # pyright: ignore[reportAttributeAccessIssue]
             orig_annotation = model.__annotations__[field]
@@ -143,6 +150,10 @@ class Translator:
             model.__table__.columns[field].nullable = True  # pyright: ignore[reportAttributeAccessIssue]
             model.__annotations__[field] = self._make_optional(orig_annotation)
             model.model_fields[field].annotation = model.__annotations__[field]
+
+            # add custom json serialization
+            setattr(model, f"_serialize_{field}", make_serializer(field))
+            model.__pydantic_decorators__.build(model)
 
             for lang in self._languages:
                 translation_field = f"{field}_{lang}"
@@ -162,7 +173,7 @@ class Translator:
 
                 # change model Pydatnic field
                 pydantic_field = deepcopy(model.model_fields[field])
-
+                pydantic_field.exclude=True
                 pydantic_field.alias = translation_field
                 pydantic_field.annotation = translation_annotation
 

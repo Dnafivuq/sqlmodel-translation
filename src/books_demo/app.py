@@ -47,3 +47,11 @@ def get_books_titles() -> list[Book]:
     with Session(engine) as session:
         books = session.exec(select(Book)).all()
         return [book.title for book in books]
+
+@app.post("/books/", response_model=Book)
+def create_book(book: Book) -> Book:
+    with Session(engine) as session:
+        session.add(book)
+        session.commit()
+        session.refresh(book)
+        return book
