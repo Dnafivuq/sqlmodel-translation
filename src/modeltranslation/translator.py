@@ -153,7 +153,6 @@ class Translator:
 
             # add custom json serialization
             setattr(model, f"_serialize_{field}", make_serializer(field))
-            model.__pydantic_decorators__.build(model)
 
             for lang in self._languages:
                 translation_field = f"{field}_{lang}"
@@ -182,6 +181,7 @@ class Translator:
 
                 setattr(model, translation_field, column_property(column))
 
+        model.__pydantic_decorators__.build(model)
         model.model_rebuild(force=True)
 
     def _make_optional(self, typehint: Any) -> Any:  # noqa: ANN401
