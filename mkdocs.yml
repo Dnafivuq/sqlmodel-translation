@@ -81,6 +81,17 @@ plugins:
             # Show base classes OR inheritance diagram.
             show_bases: false
 
+# Code in manually written docs doesn't have highlighting without this.
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
 nav:
   - Home: index.md
+  - quickstart.md
   - reference.md

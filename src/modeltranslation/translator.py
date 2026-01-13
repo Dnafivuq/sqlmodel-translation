@@ -90,12 +90,30 @@ class TranslationOptions:
 
 
 class Translator:
+    """A translator object that manages translations for registered SQLModel classes."""
+
     def __init__(
         self,
         default_language: str,
         languages: tuple[str, ...],
         fallback_languages: dict[str, tuple[str, ...]] | None = None,
     ) -> None:
+        """Construct a translator object.
+
+        Args:
+            default_language (str): The language to use if no language was set externally.
+
+            languages (tuple[str, ...]): All supported languages i.e the translations you want to store
+
+            fallback_languages (dict[str, tuple[str, ...]] | None): Fallbacks for each language
+                used when the active language is not in `languages`. An example:
+                {
+                'default': ('en', 'pl', 'de'),
+                'fr': 'es'
+                }
+                The default key is required.
+
+        """
         self._active_language: ContextVar[str] = ContextVar("current_locale", default=default_language)
 
         # default language
