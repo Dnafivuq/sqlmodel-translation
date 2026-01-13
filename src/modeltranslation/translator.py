@@ -2,6 +2,7 @@ from collections.abc import Callable, Iterator
 from contextvars import ContextVar
 from copy import deepcopy
 from functools import wraps
+from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
 from sqlalchemy import Column
@@ -175,14 +176,12 @@ class Translator:
     def _make_optional(self, typehint: Any) -> Any:  # noqa: ANN401
         """Wrap a type in Optional[] unless it's already optional."""
         origin = get_origin(typehint)
-        if origin is Union and type(None) in get_args(typehint):
+        # if origin is Union and type(None) in get_args(typehint):
+        if origin is UnionType and type(None) in get_args(typehint):
             return typehint
         return typehint | None
 
     def _is_required(self, language: str, field: str, options: TranslationOptions) -> bool:
-        if options.required_languages is None:
-            return False
-
         if type(options.required_languages) is tuple:
             return language in options.required_languages
 
@@ -191,12 +190,13 @@ class Translator:
                 return field in options.required_languages[language]
             if "default" in options.required_languages:
                 return field in options.required_languages["default"]
+        # required_languages in TranslationOptions is None
         return False
 
     def _is_null_value(self, field: str, value: Any, options: TranslationOptions) -> bool:  # noqa: ANN401
         # if translation defines custom fallback undefined value then check if value is eq to it
         if options.fallback_undefined is not None and field in options.fallback_undefined:
-            return value == options.fallback_undefined[field]
+            return value is None or value == options.fallback_undefined[field]
         # else check if value is eq None
         return value is None
 
@@ -222,7 +222,7 @@ class Translator:
     def _fallback_value(self, field: str, options: TranslationOptions) -> Any:  # noqa: ANN401
         if options.fallback_values is None:
             return None
-        if type(options.fallback_languages) is not dict:
+        if type(options.fallback_values) is not dict:
             return options.fallback_values
         if field in options.fallback_values:
             return options.fallback_values[field]

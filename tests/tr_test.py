@@ -438,3 +438,358 @@ def test_no_default_fallback() -> None:
             languages=("en", "pl", "fr"),
             fallback_languages={"pl": ("en", "fr"), "fr": ("pl", "en")},
         )
+
+
+def test_get_languages() -> None:
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl", "fr"),
+    )
+
+    assert translator.get_languages() == ("en", "pl", "fr")
+
+
+def test_get_default_languages() -> None:
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl", "fr"),
+    )
+
+    assert translator.get_default_language() == "en"
+
+
+def test_invalid_fallback_type_not_dict() -> None:
+    with pytest.raises(ImproperlyConfiguredError):
+        Translator(
+            default_language="en",
+            languages=("en", "pl"),
+            fallback_languages="pl",
+        )
+
+
+def test_invalid_fallback_value_type_not_tuple() -> None:
+    with pytest.raises(ImproperlyConfiguredError):
+        Translator(
+            default_language="en",
+            languages=("en", "pl"),
+            fallback_languages={"pl": "en", "default": ("en",)},
+        )
+
+
+def test_invalid_fallback_key_not_in_languages() -> None:
+    with pytest.raises(ImproperlyConfiguredError):
+        Translator(
+            default_language="en",
+            languages=("en", "pl"),
+            fallback_languages={"fr": "en", "default": ("en",)},
+        )
+
+
+def test_required_languages_not_a_tuple() -> None:
+    class Book(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        title: str | None
+
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl", "fr"),
+    )
+
+    with pytest.raises(ImproperlyConfiguredError):
+
+        @translator.register(Book)
+        class BookTranslationOptions(TranslationOptions):
+            fields = ("title",)
+            required_languages = "en"
+
+
+def test_dict_required_languages_not_in_languages() -> None:
+    class Book(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        title: str | None
+
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl", "fr"),
+    )
+
+    with pytest.raises(ImproperlyConfiguredError):
+
+        @translator.register(Book)
+        class BookTranslationOptions(TranslationOptions):
+            fields = ("title",)
+            required_languages = {"gb": ("en",)}
+
+
+def test_default_language_not_in_languages() -> None:
+    with pytest.raises(ImproperlyConfiguredError):
+        Translator(
+            default_language="gb",
+            languages=("en", "pl", "fr"),
+        )
+
+
+def test_default_language_is_none() -> None:
+    with pytest.raises(ImproperlyConfiguredError):
+        Translator(
+            default_language=None,
+            languages=("en", "pl", "fr"),
+        )
+
+
+def test_languages_not_a_tuple() -> None:
+    with pytest.raises(ImproperlyConfiguredError):
+        Translator(default_language="en", languages="en")
+
+
+def test_languages_is_none() -> None:
+    with pytest.raises(ImproperlyConfiguredError):
+        Translator(default_language="en", languages=None)
+
+
+def test_fallback_values(engine: Engine) -> None:
+    class Book(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        title: str | None
+
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl", "fr"),
+    )
+
+    @translator.register(Book)
+    class BookTranslationOptions(TranslationOptions):
+        fields = ("title",)
+        required_languages = ("en",)
+        fallback_languages = {"fr": ("pl",), "default": ("pl",)}
+        fallback_values = {"title": "Does not exist"}
+
+    SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        if not session.exec(select(Book)).first():
+            books = [
+                Book(title="en The Hobbit", author="J.R.R. Tolkien"),
+                Book(title="en 1984", title_pl="pl 1984", author="George Orwell"),
+                Book(title="en To Kill a Mockingbird", title_fr="fr TKaM", author="Harper Lee"),
+            ]
+            session.add_all(books)
+            session.commit()
+
+        translator.set_active_language("fr")
+
+        stm = select(Book)
+        books = session.exec(stm).all()
+
+        assert books[0].title == "Does not exist"
+        assert books[1].title == "pl 1984"
+        assert books[2].title == "fr TKaM"
+
+
+def test_field_not_in_fallback_values(engine: Engine) -> None:
+    class Book(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        title: str | None
+
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl", "fr"),
+    )
+
+    @translator.register(Book)
+    class BookTranslationOptions(TranslationOptions):
+        fields = ("title",)
+        required_languages = ("en",)
+        fallback_languages = {"fr": ("pl",), "default": ("pl",)}
+        fallback_values = {"author": "Does not exist"}
+
+    SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        if not session.exec(select(Book)).first():
+            books = [
+                Book(title="en The Hobbit", author="J.R.R. Tolkien"),
+                Book(title="en 1984", title_pl="pl 1984", author="George Orwell"),
+                Book(title="en To Kill a Mockingbird", title_fr="fr TKaM", author="Harper Lee"),
+            ]
+            session.add_all(books)
+            session.commit()
+
+        translator.set_active_language("fr")
+
+        stm = select(Book)
+        books = session.exec(stm).all()
+
+        assert books[0].title is None
+        assert books[1].title == "pl 1984"
+        assert books[2].title == "fr TKaM"
+
+
+def test_fallback_values_not_a_dict(engine: Engine) -> None:
+    class Book(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        title: str | None
+
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl", "fr"),
+    )
+
+    @translator.register(Book)
+    class BookTranslationOptions(TranslationOptions):
+        fields = ("title",)
+        required_languages = ("en",)
+        fallback_languages = {"fr": ("pl",), "default": ("pl",)}
+        fallback_values = "Does not exist"
+
+    SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        if not session.exec(select(Book)).first():
+            books = [
+                Book(title="en The Hobbit", author="J.R.R. Tolkien"),
+                Book(title="en 1984", title_pl="pl 1984", author="George Orwell"),
+                Book(title="en To Kill a Mockingbird", title_fr="fr TKaM", author="Harper Lee"),
+            ]
+            session.add_all(books)
+            session.commit()
+
+        translator.set_active_language("fr")
+
+        stm = select(Book)
+        books = session.exec(stm).all()
+
+        assert books[0].title == "Does not exist"
+        assert books[1].title == "pl 1984"
+        assert books[2].title == "fr TKaM"
+
+
+def test_options_required_language_as_dict(engine: Engine) -> None:
+    class Book(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        title: str | None
+
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl", "fr"),
+    )
+
+    @translator.register(Book)
+    class BookTranslationOptions(TranslationOptions):
+        fields = ("title",)
+        required_languages = {
+            "en": ("author",),
+            "default": ("title",),
+        }
+
+    SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        if not session.exec(select(Book)).first():
+            books = [
+                Book(
+                    title="en The Hobbit",
+                    title_pl="pl Hobbit",
+                    title_fr="fr Hobbit",
+                    author="J.R.R. Tolkien",
+                ),
+                Book(title="en 1984", title_pl="pl 1984", title_fr="fr 1984", author="George Orwell"),
+                Book(
+                    title="en To Kill a Mockingbird",
+                    title_pl="pl TKaM",
+                    title_fr="fr TKaM",
+                    author="Harper Lee",
+                ),
+            ]
+            session.add_all(books)
+            session.commit()
+
+
+def test_fallback_undefined(engine: Engine) -> None:
+    class Book(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        title: str | None
+
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl", "fr"),
+    )
+
+    @translator.register(Book)
+    class BookTranslationOptions(TranslationOptions):
+        fields = ("title",)
+        required_languages = ("en",)
+        fallback_languages = {"fr": ("pl",), "default": ("en",)}
+        fallback_undefined = {"title": "no title"}
+
+    SQLModel.metadata.create_all(engine)
+
+    with Session(engine) as session:
+        if not session.exec(select(Book)).first():
+            books = [
+                Book(title="en The Hobbit", title_pl="no title", author="J.R.R. Tolkien"),
+                Book(title="en 1984", title_pl="pl 1984", author="George Orwell"),
+                Book(title="en To Kill a Mockingbird", title_fr="fr TKaM", author="Harper Lee"),
+            ]
+            session.add_all(books)
+            session.commit()
+
+        translator.set_active_language("fr")
+
+        stm = select(Book)
+        books = session.exec(stm).all()
+
+        assert books[0].title == "en The Hobbit"
+        assert books[1].title == "pl 1984"
+        assert books[2].title == "fr TKaM"
+
+        translator.set_active_language("pl")
+
+        stm = select(Book)
+        books = session.exec(stm).all()
+
+        assert books[0].title == "en The Hobbit"
+        assert books[1].title == "pl 1984"
+        assert books[2].title == "en To Kill a Mockingbird"
+
+
+def test_set_active_language_not_in_languages(engine: Engine) -> None:
+    class Book(SQLModel, table=True):
+        id: int | None = Field(default=None, primary_key=True)
+        title: str | None
+
+    translator = Translator(
+        default_language="en",
+        languages=("en", "pl"),
+    )
+
+    @translator.register(Book)
+    class BookTranslationOptions(TranslationOptions):
+        fields = ("title",)
+        required_languages = ("en",)
+
+    SQLModel.metadata.create_all(engine)
+
+    translator.set_active_language("fr")
+
+    with Session(engine) as session:
+        if not session.exec(select(Book)).first():
+            books = [
+                Book(title="en The Hobbit", author="J.R.R. Tolkien"),
+                Book(title="en 1984", title_pl="pl 1984", author="George Orwell"),
+                Book(title="en To Kill a Mockingbird", author="Harper Lee"),
+            ]
+            session.add_all(books)
+            session.commit()
+
+        stm = select(Book)
+        books = session.exec(stm).all()
+
+        assert books[0].title == "en The Hobbit"
+        assert books[1].title == "en 1984"
+        assert books[2].title == "en To Kill a Mockingbird"
+
+    translator.set_active_language("pl")
+    assert books[0].title == "en The Hobbit"
+    assert books[1].title == "pl 1984"
+    assert books[2].title == "en To Kill a Mockingbird"
