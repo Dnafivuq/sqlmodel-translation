@@ -206,19 +206,17 @@ class Translator:
         elif self._fallback_languages is not None:
             yield from self._yield_fallbacks(language, self._fallback_languages)
 
-    def _yield_fallbacks(self, language: str, fallbacks: dict[str, tuple[str, ...]] | None) -> Iterator[str]:
-        if not fallbacks:
-            return
+    def _yield_fallbacks(self, language: str, fallbacks: dict[str, tuple[str, ...]]) -> Iterator[str]:
+        seen: set[str] = set()
 
-        if language in fallbacks:
-            candidates = fallbacks[language]
-        elif "default" in fallbacks:
-            candidates = fallbacks["default"]
-        else:
-            return
+        for fallback in fallbacks.get(language, ()):
+            if fallback not in seen:
+                seen.add(fallback)
+                yield fallback
 
-        for fallback in candidates:
-            if fallback != language:
+        for fallback in fallbacks.get("default", ()):
+            if fallback != language and fallback not in seen:
+                seen.add(fallback)
                 yield fallback
 
     def _fallback_value(self, field: str, options: TranslationOptions) -> Any:  # noqa: ANN401
@@ -271,21 +269,31 @@ class Translator:
     def _validate_fallback_languages(self, fallback_languages: dict[str, tuple[str, ...]] | None) -> None:
         if fallback_languages is None:
             return
+
+        # check if fallbacks_languages is dict
         if type(fallback_languages) is not dict:
             msg = f"'fallback_languages' type is invalid {type(fallback_languages)}"
             raise ImproperlyConfiguredError(msg)
 
+        # check if default in fallbacks
         if "default" not in fallback_languages:
             msg = "missing 'default' key in 'fallback_languages'"
             raise ImproperlyConfiguredError(msg)
+
         for key, value in fallback_languages.items():
             # check if languages used as keys are defined inside Translator languages
             if key != "default" and key not in self._languages:
                 msg = f"'{key}' used in 'fallback_languages' not in defined languages {self._languages}"
                 raise ImproperlyConfiguredError(msg)
+
             # check if fallbacks are defined as tuples
             if type(value) is not tuple:
                 msg = f"'{key}' fallback type is invalid {type(value)}"
+                raise ImproperlyConfiguredError(msg)
+
+            # check if language is not used as fallback to itself
+            if key != "default" and key in value:
+                msg = f"'{key}' used in 'fallback_languages' used as fallback to itself"
                 raise ImproperlyConfiguredError(msg)
 
             # check if languages used as fallbacks are defined inside Translator languages
