@@ -14,12 +14,19 @@ def apply_translation(app: FastAPI, translator: Translator) -> None:
         translator (Translator): The translator used to register translations in this app.
 
     Examples:
+        >>> from fastapi import FastAPI
+        >>> from modeltranslation import Translator, apply_translation
+        ...
         >>> translator = Translator(
         ...     default_language="en",
         ...     languages=("en", "pl"),
         ... )
         >>> app = FastAPI()
         >>> apply_translation(app, translator)
+
+    Note:
+        In a typical use case, you would register translations with
+        the translator before calling this function.
 
     """
 

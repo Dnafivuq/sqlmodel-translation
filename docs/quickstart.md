@@ -1,6 +1,7 @@
 # Quickstart
 
 To demonstrate how to use this library we will write a simple FastAPI application.
+The full example is available at examples/quickstart.py.
 
 First we will create a sqlite database.
 
@@ -95,7 +96,7 @@ app = FastAPI()
 apply_translation(app, translator)
 
 
-@app.get("/books")
+@app.get("/all")
 def get_books() -> list[Book]:
     with Session(engine) as session:
         return session.exec(select(Book)).all()
@@ -105,9 +106,54 @@ def get_books() -> list[Book]:
 def get_titles() -> list[Book]:
     with Session(engine) as session:
         return session.exec(select(Book.title)).all()
-```
 
-If we run the server and use the `/titles` endpoint, we will either see all titles in enlish or polish.
+
+@app.post("/create")
+def create_book(book: Book) -> Book:
+    with Session(engine) as session:
+        session.add(book)
+        session.commit()
+        session.refresh(book)
+        return book
+
+```
+We can now run the server with `fastapi dev quickstart.py`.
+The server by default runs on `http://127.0.0.1:8000`, with docs at `http://127.0.0.1:8000/docs`.
+
+Now we will look at how translations are handled in endpoints.
+
+`/all` returns a list of books with translated titles.
+
+    [
+      {
+        "author": "J.R.R. Tolkien",
+        "title": "english_title_1",
+        "id": 1
+      },
+      {
+        "author": "Harper Lee",
+        "title": "english_title_2",
+        "id": 2
+      }
+    ]
+`/titles` returns translated titles.
+
+    [
+      "english_title_1",
+      "english_title_2"
+    ]
+
+We can also take a look at the schema for `/create` using the FastAPI docs.
+
+    {
+      "id": 0,
+      "title": "string",
+      "author": "string",
+      "title_en": "string",
+      "title_pl": "string"
+    }
+When creating a `Book` you we can specify all translation fields manually,
+or use the `title` field and let it redirect based on the active language.
 
 
 [`Translator`][modeltranslation.Translator], and [`TranslationOptions`][modeltranslation.TranslationOptions] support other configuration options regarding required languages, and fallback behaviour.

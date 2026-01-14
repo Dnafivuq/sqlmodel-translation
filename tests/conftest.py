@@ -85,7 +85,7 @@ def session(
 
 
 @pytest.fixture
-def book_seed_data(session: Session, book_cls: type[SQLModel]):
+def book_seed_data(session: Session, book_cls: type[SQLModel]) -> Session:
     if not session.exec(select(book_cls)).first():
         books = [
             book_cls(title="The Hobbit", author="J.R.R. Tolkien"),
