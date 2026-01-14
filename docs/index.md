@@ -9,4 +9,4 @@ This library was heavily inspired by [django-modeltranslation](https://django-mo
 - Fully compatible with Pydantic validation.
 
 
-See [quickstart](quickstart.md) and [reference](quickstart.md) for more details.
+See [quickstart](quickstart.md), [reference](reference.md) and [concepts](concepts.md) for more details.

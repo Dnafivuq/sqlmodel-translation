@@ -93,5 +93,6 @@ markdown_extensions:
 
 nav:
   - Home: index.md
-  - quickstart.md
-  - reference.md
+  - Quickstart: quickstart.md
+  - Reference: reference.md
+  - Concepts: concepts.md
