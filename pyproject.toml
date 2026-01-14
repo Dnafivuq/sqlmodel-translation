@@ -39,7 +39,7 @@ markers = ["todo(desc) : Suggestions for the library"]
 
 [tool.tox]
 requires = ["tox>=4"]
-env_list = ["3.12", "3.13"]
+env_list = ["3.12", "3.13", "3.14"]
 
 [tool.tox.env_run_base]
 description = "run tests"
@@ -47,8 +47,12 @@ deps = [
     "pytest>=8"
 ]
 
-commands = [["pytest", "-q", "tests", { replace = "posargs", extend = true}],
-    ["pytest", "-q", "--doctest-modules", "src"]]
+commands = [["pytest", "-q", "tests", { replace = "posargs", extend = true}]]
+
+# Doctests are currently turned off. This is because SQLModel saves state
+# between doctests and we haven't found a way to fix that.
+# ["pytest", "-q", "--doctest-modules", "src"]
+
 
 [tool.tox.env-3.12]
 description = "run unit tests and doctests in python-3.12"
