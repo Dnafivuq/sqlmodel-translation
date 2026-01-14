@@ -277,7 +277,7 @@ def test_default_fallback(
 def test_get_fallback(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -321,7 +321,7 @@ def test_get_fallback(engine: Engine) -> None:
 def test_none_fallback(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -368,7 +368,7 @@ def test_none_fallback(engine: Engine) -> None:
 def test_different_fallback_in_transaltionoptions(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -488,7 +488,7 @@ def test_invalid_fallback_key_not_in_languages() -> None:
 def test_required_languages_not_a_tuple() -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -506,7 +506,7 @@ def test_required_languages_not_a_tuple() -> None:
 def test_dict_required_languages_not_in_languages() -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -550,7 +550,7 @@ def test_languages_is_none() -> None:
 def test_fallback_values(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -589,7 +589,7 @@ def test_fallback_values(engine: Engine) -> None:
 def test_field_not_in_fallback_values(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -628,7 +628,7 @@ def test_field_not_in_fallback_values(engine: Engine) -> None:
 def test_fallback_values_not_a_dict(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -667,7 +667,7 @@ def test_fallback_values_not_a_dict(engine: Engine) -> None:
 def test_options_required_language_as_dict(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -708,7 +708,7 @@ def test_options_required_language_as_dict(engine: Engine) -> None:
 def test_fallback_undefined(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
@@ -756,7 +756,7 @@ def test_fallback_undefined(engine: Engine) -> None:
 def test_set_active_language_not_in_languages(engine: Engine) -> None:
     class Book(SQLModel, table=True):
         id: int | None = Field(default=None, primary_key=True)
-        title: str | None
+        title: str
 
     translator = Translator(
         default_language="en",
