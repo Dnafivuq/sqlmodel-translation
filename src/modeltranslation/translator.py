@@ -45,8 +45,8 @@ class TranslationOptions:
     Example:
         ```
         {
-        'default': ('en', 'pl', 'de'),
-        'fr': 'es'
+          'default': ('en', 'pl', 'de'),
+          'fr': 'es'
         }
         ```
     """
@@ -56,13 +56,13 @@ class TranslationOptions:
     Example:
         `('No translation provided')`
 
-    It's also possible to specify a fallback value for each field
+    It's also possible to specify a fallback value for each field.
 
     Example:
         ```
         {
-        'title': ('No translation'),
-        'author': ('No translation provided')
+          'title': ('No translation'),
+          'author': ('No translation provided')
         }
         ```
 
@@ -71,12 +71,12 @@ class TranslationOptions:
     fallback_undefined: dict[str, Any] | None = None
 
     required_languages: dict[str, tuple[str, ...]] | tuple[str, ...] | None = None
-    """The required translations for this class
+    """The required translations for this class.
 
     This also affects the pydantic model and typehints.
 
     Example:
-        `('title',)`
+        `('en',)`
 
     The fallbacks can be also specified with a dictionary.
     This makes it possible to set the requirements per field.
@@ -84,11 +84,11 @@ class TranslationOptions:
     Example:
         ```
         {
-        'en': ('title', 'author'),
-        'default': ('title',)
+          'en': ('title', 'author'),
+          'default': ('title',)
         }
         ```
-
+    The 'default' key is required.
     For english, title and author are required. For all other languages only title is required.
 
     """
@@ -108,14 +108,14 @@ class Translator:
         Args:
             default_language (str): The language to use if no language was set externally.
 
-            languages (tuple[str, ...]): All supported languages i.e the translations you want to store
+            languages (tuple[str, ...]): All supported languages i.e the translations you want to store.
 
             fallback_languages (dict[str, tuple[str, ...]] | None): Fallbacks for each language
                 used when the active language is not in `languages`. An example:
-                {
-                'default': ('en', 'pl', 'de'),
-                'fr': 'es'
-                }
+                `{
+                  'default': ('en', 'pl', 'de'),
+                  'fr': 'es'
+                }`.
                 The default key is required.
 
         Raises:
