@@ -20,6 +20,7 @@ class TranslationOptions:
     which translations are required and how to handle missing values.
 
     Examples:
+        >>> from modeltranslation import TranslationOptions
         >>> class BookTranslationOptions(TranslationOptions):
         ...     fields = ("title",)
         ...     required_languages = ("en",)
@@ -117,13 +118,14 @@ class Translator:
                 }
                 The default key is required.
 
+        Raises:
+            ImproperlyConfiguredError: If the configuration is internally inconsistent.
+
         """
         self._active_language: ContextVar[str] = ContextVar("current_locale", default=default_language)
 
-        # default language
         self._default_language: str = default_language
 
-        # supported languages
         self._languages: tuple[str, ...] = languages
 
         # fallbacks for untranslated languages
@@ -154,6 +156,9 @@ class Translator:
 
         Args:
             model (SQLModel): the class to apply translations on.
+
+        Raises:
+            ImproperlyConfiguredError: If the translation options are inconsistent with the Translator.
 
         Examples:
             >>> from sqlmodel import SQLModel
@@ -213,7 +218,6 @@ class Translator:
         def locale_set_decorator(original_set_function: Callable) -> Callable:
             @wraps(original_set_function)
             def locale_function(model_self: type[SQLModel], name: str, value: Any) -> Callable:  # noqa: ANN401
-                # ignore private and not translated functions
                 if name.startswith("_") or name not in options.fields:
                     return original_set_function(model_self, name, value)
 
@@ -230,7 +234,6 @@ class Translator:
             def locale_function(
                 model_self: type[SQLModel] | SQLModel, name: str, *args: tuple[Any, ...]
             ) -> Callable:
-                # ignore private and not translated functions
                 if name.startswith("_") or name not in options.fields:
                     return original_get_function(model_self, name, *args)
 
@@ -256,6 +259,7 @@ class Translator:
             @field_serializer(field_name, when_used="json")
             def serial(self: type[SQLModel], _: Any) -> Any:  # noqa: ANN401
                 return getattr(self, field_name)
+
             return serial
 
         for field in options.fields:
@@ -286,9 +290,9 @@ class Translator:
 
                 model.__table__.append_column(column)  # pyright: ignore[reportAttributeAccessIssue]
 
-                # change model Pydatnic field
+                # change model Pydantic field
                 pydantic_field = deepcopy(model.model_fields[field])
-                pydantic_field.exclude=True
+                pydantic_field.exclude = True
                 pydantic_field.alias = translation_field
                 pydantic_field.annotation = translation_annotation
 

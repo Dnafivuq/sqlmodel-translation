@@ -5,3 +5,6 @@
 ::: modeltranslation.TranslationOptions
 
 ::: modeltranslation.apply_translation
+
+::: modeltranslation.ImproperlyConfiguredError
+
