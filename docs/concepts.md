@@ -95,19 +95,19 @@ class BookTranslationOptions(TranslationOptions):
 This is impossible, because `fr` is not declared in the translator.
 [ImproperlyConfiguredError][modeltranslation.ImproperlyConfiguredError] will be thrown whenever inconsistencies like this are detected.
 
-For more details about possible configuraion options see [`Translator`][modeltranslation.Translator] and [`TranslationOptions`][modeltranslation.TranslationOptions]. If this is not sufficient try looking up the tests.
+For more details about possible configuraion options see [`Translator`][modeltranslation.Translator] and [`TranslationOptions`][modeltranslation.TranslationOptions]. If this is not sufficient, try looking up the tests.
 Each test for a configuration option is an example exactly like this and is fairly readable to new users.
 
 
 ## Accessing translated fields
 
-__Rule 1__
+__Rule 1__ -
     Reading the value from the original field returns the value translated to the current language.
 
-__Rule 2__
+__Rule 2__ -
     Assigning a value to the original field updates the value in the associated current language translation field.
 
-__Rule 3__
+__Rule 3__ -
     If both fields - the original and the current language translation field - are updated at the same time, the current language translation field wins.
 
 The original field is inaccessible and should be considered invalid.

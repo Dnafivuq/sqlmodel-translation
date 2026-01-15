@@ -1,5 +1,5 @@
 # SQLModel-translation
-SQLModel-translation is a library for translating SQLModel with FastAPI apps.
+SQLModel-Translation is a Python library for adding translation support to SQLModel and FastAPI applications.
 This library was heavily inspired by [django-modeltranslation](https://django-modeltranslation.readthedocs.io/en/latest/)
 
 ## Features

@@ -1,7 +1,7 @@
 [project]
-name = "zprp-modeltranslation"
+name = "SQLModel-translation"
 version = "0.1.0"
-description = "Add your description here"
+description = "Translation library for SQLModel and FastAPI"
 readme = "README.md"
 requires-python = ">=3.12"
 
@@ -36,7 +36,6 @@ module-name = "modeltranslation"
 [tool.pytest.ini_options]
 testpaths = ["./tests/*"]
 
-markers = ["todo(desc) : Suggestions for the library"]
 
 [tool.tox]
 requires = ["tox>=4"]
@@ -60,6 +59,9 @@ description = "run unit tests and doctests in python-3.12"
 
 [tool.tox.env-3.13]
 description = "run unit tests and doctests in python-3.13"
+
+[tool.tox.env-3.14]
+description = "run unit tests and doctests in python-3.14"
 
 
 [tool.ruff]

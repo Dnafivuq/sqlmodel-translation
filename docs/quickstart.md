@@ -1,7 +1,7 @@
 # Quickstart
 
 To demonstrate how to use this library we will write a simple FastAPI application.
-The full example is available at examples/quickstart.py.
+The full example is available at `examples/quickstart.py`.
 
 First we will create a sqlite database.
 
@@ -19,7 +19,7 @@ def create_db_and_tables():
     SQLModel.metadata.create_all(engine)
 ```
 
-To begin create a Book class.
+To begin create a `Book` class.
 ```python
 class Book(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -27,7 +27,7 @@ class Book(SQLModel, table=True):
     author: str
 ```
 
-To make Book translatable you need to create a [`Translator`][modeltranslation.Translator], [`TranslationOptions`][modeltranslation.TranslationOptions] and register the `TranslationOptions` for your class.
+To make `Book` translatable you need to create a [`Translator`][modeltranslation.Translator], [`TranslationOptions`][modeltranslation.TranslationOptions] and register the `TranslationOptions` for your class.
 
 ```python
 from modeltranslation import TranslationOptions, Translator
