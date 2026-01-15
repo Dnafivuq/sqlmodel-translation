@@ -20,3 +20,5 @@ site
 
 # mypy
 .mypy_cache
+
+.coverage
