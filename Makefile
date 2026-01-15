@@ -1,5 +1,3 @@
-DOCS_FOLDER= docs
-
 .PHONY: all test cov docs demo
 
 # Default target
@@ -16,10 +14,10 @@ help:
 
 demo:
 	@uv run fastapi dev examples/quickstart.py
- 
+
 docs:
 	@echo "Serving documentation"
-	@uv run mkdocs serve $(DOXYFILE)
+	@uv run mkdocs serve
 
 test:
 	@uv run pytest

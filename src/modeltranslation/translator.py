@@ -401,12 +401,10 @@ class Translator:
         if fallback_languages is None:
             return
 
-        # check if fallbacks_languages is dict
         if type(fallback_languages) is not dict:
             msg = f"'fallback_languages' type is invalid {type(fallback_languages)}"
             raise ImproperlyConfiguredError(msg)
 
-        # check if default in fallbacks
         if "default" not in fallback_languages:
             msg = "missing 'default' key in 'fallback_languages'"
             raise ImproperlyConfiguredError(msg)
