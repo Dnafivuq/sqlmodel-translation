@@ -43,7 +43,7 @@ class BookTranslationOptions(TranslationOptions):
 
 ```
 
-As a result `Book` gained 2 new fields - Book.title_en, Book.title_pl.
+As a result `Book` gained 2 new fields - `Book.title_en`, `Book.title_pl`.
 We can now do:
 
 ```python

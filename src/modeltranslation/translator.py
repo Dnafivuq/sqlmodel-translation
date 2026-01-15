@@ -88,7 +88,7 @@ class TranslationOptions:
           'default': ('title',)
         }
         ```
-    The 'default' key is required.
+    The `default` key is required.
     For english, title and author are required. For all other languages only title is required.
 
     """
