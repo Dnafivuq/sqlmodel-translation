@@ -2,6 +2,7 @@
 
 SQLModel-translation is a translation library for [SQLModel](https://sqlmodel.tiangolo.com) and [FastAPI](https://fastapi.tiangolo.com).
 
+Documentation: [https://dnafivuq.github.io/sqlmodel-translation](https://dnafivuq.github.io/sqlmodel-translation)
 
 This project uses [uv](https://docs.astral.sh/uv/) for package managment.
 
