@@ -1,5 +1,5 @@
 [project]
-name = "SQLModel-translation"
+name = "sqlmodel-translation"
 version = "0.1.0"
 description = "Translation library for SQLModel and FastAPI"
 readme = "README.md"
