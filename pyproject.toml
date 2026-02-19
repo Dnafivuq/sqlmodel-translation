@@ -5,6 +5,10 @@ description = "Translation library for SQLModel and FastAPI"
 readme = "README.md"
 requires-python = ">=3.12"
 
+[project.urls]
+Repository = "https://github.com/Dnafivuq/sqlmodel-translation"
+Documentation = "https://dnafivuq.github.io/sqlmodel-translation/"
+
 dependencies = [
     "fastapi>=0.119.1",
     "sqlalchemy>=2.0.44",
