@@ -5,7 +5,8 @@ from functools import wraps
 from types import UnionType
 from typing import Any, get_args, get_origin
 
-from pydantic import field_serializer
+from pydantic._internal._decorators import Decorator, FieldSerializerDecoratorInfo
+from pydantic_core import PydanticUndefined
 from sqlalchemy import Column
 from sqlalchemy.orm import column_property
 from sqlmodel import SQLModel
@@ -256,7 +257,6 @@ class Translator:
 
     def _rebuild_model(self, model: type[SQLModel], options: TranslationOptions) -> None:
         def make_serializer(field_name: str) -> Callable:
-            @field_serializer(field_name, when_used="json")
             def serial(self: type[SQLModel], _: Any) -> Any:  # noqa: ANN401
                 return getattr(self, field_name)
 
@@ -271,8 +271,26 @@ class Translator:
             model.__annotations__[field] = self._make_optional(orig_annotation)
             model.model_fields[field].annotation = model.__annotations__[field]
 
-            # add custom json serialization
-            setattr(model, f"_serialize_{field}", make_serializer(field))
+            # create the serializer function
+            serializer_func = make_serializer(field)
+            serializer_name = f"_serialize_{field}"
+            setattr(model, serializer_name, serializer_func)
+
+            # create and register the Decorator
+            decorator = Decorator(
+                cls_ref=f"{model.__module__}.{model.__qualname__}:{id(model)}",
+                cls_var_name=serializer_name,
+                func=serializer_func,
+                shim=None,
+                info=FieldSerializerDecoratorInfo(
+                    fields=(field,),
+                    mode='plain',
+                    return_type=PydanticUndefined,
+                    when_used='json',
+                    check_fields=None
+                )
+            )
+            model.__pydantic_decorators__.field_serializers[serializer_name] = decorator
 
             for lang in self._languages:
                 translation_field = f"{field}_{lang}"
@@ -301,7 +319,6 @@ class Translator:
 
                 setattr(model, translation_field, column_property(column))
 
-        model.__pydantic_decorators__.build(model)
         model.model_rebuild(force=True)
 
     def _make_optional(self, typehint: Any) -> Any:  # noqa: ANN401
