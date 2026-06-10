@@ -1,6 +1,6 @@
 [project]
 name = "sqlmodel-translation"
-version = "0.1.0"
+version = "0.1.3"
 description = "Translation library for SQLModel and FastAPI"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -31,7 +31,7 @@ Repository = "https://github.com/Dnafivuq/sqlmodel-translation"
 Documentation = "https://dnafivuq.github.io/sqlmodel-translation/"
 
 [build-system]
-requires = ["uv_build>=0.9.22,<0.10.0"]
+requires = ["uv_build>=0.9.22,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
