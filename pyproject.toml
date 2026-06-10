@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Translation library for SQLModel and FastAPI"
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
 
 dependencies = [
     "fastapi>=0.119.1",
